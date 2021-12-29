@@ -1,14 +1,17 @@
 -- name: GetUser :one
 SELECT * FROM users
-WHERE user_id = $1 LIMIT 1;
+WHERE user_id = $1
+LIMIT 1;
 
 -- name: GetUserByEmail :one
 SELECT * FROM users
-WHERE email_address = $1 LIMIT 1;
+WHERE email_address = $1
+LIMIT 1;
 
 -- name: GetUserByVerificationCode :one
 SELECT * FROM users
-WHERE verification_code = $1 LIMIT 1;
+WHERE verification_code = $1
+LIMIT 1;
 
 -- name: ListUsers :many
 SELECT * FROM users

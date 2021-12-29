@@ -9,30 +9,30 @@ import (
 	"github.com/google/uuid"
 )
 
-const createTenant = `-- name: CreateTenant :one
-INSERT INTO tenant (
-  tenant_name, project_name, user_id
+const createWorkspace = `-- name: CreateWorkspace :one
+INSERT INTO workspace (
+  workspace_name, project_name, user_id
 ) VALUES (
   $1, $2, $3
 )
-RETURNING user_id, tenant_id, tenant_name, project_name, image_url, created_at, updated_at, status, tier
+RETURNING user_id, workspace_id, workspace_name, project_name, workspace_profile_image, created_at, updated_at, status, tier
 `
 
-type CreateTenantParams struct {
-	TenantName  string    `json:"tenant_name"`
-	ProjectName string    `json:"project_name"`
-	UserID      uuid.UUID `json:"user_id"`
+type CreateWorkspaceParams struct {
+	WorkspaceName string    `json:"workspace_name"`
+	ProjectName   string    `json:"project_name"`
+	UserID        uuid.UUID `json:"user_id"`
 }
 
-func (q *Queries) CreateTenant(ctx context.Context, arg CreateTenantParams) (Tenant, error) {
-	row := q.db.QueryRowContext(ctx, createTenant, arg.TenantName, arg.ProjectName, arg.UserID)
-	var i Tenant
+func (q *Queries) CreateWorkspace(ctx context.Context, arg CreateWorkspaceParams) (Workspace, error) {
+	row := q.db.QueryRowContext(ctx, createWorkspace, arg.WorkspaceName, arg.ProjectName, arg.UserID)
+	var i Workspace
 	err := row.Scan(
 		&i.UserID,
-		&i.TenantID,
-		&i.TenantName,
+		&i.WorkspaceID,
+		&i.WorkspaceName,
 		&i.ProjectName,
-		&i.ImageUrl,
+		&i.WorkspaceProfileImage,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Status,
@@ -41,20 +41,20 @@ func (q *Queries) CreateTenant(ctx context.Context, arg CreateTenantParams) (Ten
 	return i, err
 }
 
-const getTenant = `-- name: GetTenant :one
-SELECT user_id, tenant_id, tenant_name, project_name, image_url, created_at, updated_at, status, tier FROM tenant
-WHERE tenant_id = $1 LIMIT 1
+const getWorkspace = `-- name: GetWorkspace :one
+SELECT user_id, workspace_id, workspace_name, project_name, workspace_profile_image, created_at, updated_at, status, tier FROM workspace
+WHERE workspace_id = $1 LIMIT 1
 `
 
-func (q *Queries) GetTenant(ctx context.Context, tenantID uuid.UUID) (Tenant, error) {
-	row := q.db.QueryRowContext(ctx, getTenant, tenantID)
-	var i Tenant
+func (q *Queries) GetWorkspace(ctx context.Context, workspaceID uuid.UUID) (Workspace, error) {
+	row := q.db.QueryRowContext(ctx, getWorkspace, workspaceID)
+	var i Workspace
 	err := row.Scan(
 		&i.UserID,
-		&i.TenantID,
-		&i.TenantName,
+		&i.WorkspaceID,
+		&i.WorkspaceName,
 		&i.ProjectName,
-		&i.ImageUrl,
+		&i.WorkspaceProfileImage,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Status,
@@ -63,20 +63,20 @@ func (q *Queries) GetTenant(ctx context.Context, tenantID uuid.UUID) (Tenant, er
 	return i, err
 }
 
-const getTenantByUsedID = `-- name: GetTenantByUsedID :one
-SELECT user_id, tenant_id, tenant_name, project_name, image_url, created_at, updated_at, status, tier FROM tenant
+const getWorkspaceByUsedID = `-- name: GetWorkspaceByUsedID :one
+SELECT user_id, workspace_id, workspace_name, project_name, workspace_profile_image, created_at, updated_at, status, tier FROM workspace
 WHERE user_id = $1 LIMIT 1
 `
 
-func (q *Queries) GetTenantByUsedID(ctx context.Context, userID uuid.UUID) (Tenant, error) {
-	row := q.db.QueryRowContext(ctx, getTenantByUsedID, userID)
-	var i Tenant
+func (q *Queries) GetWorkspaceByUsedID(ctx context.Context, userID uuid.UUID) (Workspace, error) {
+	row := q.db.QueryRowContext(ctx, getWorkspaceByUsedID, userID)
+	var i Workspace
 	err := row.Scan(
 		&i.UserID,
-		&i.TenantID,
-		&i.TenantName,
+		&i.WorkspaceID,
+		&i.WorkspaceName,
 		&i.ProjectName,
-		&i.ImageUrl,
+		&i.WorkspaceProfileImage,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Status,
@@ -85,28 +85,67 @@ func (q *Queries) GetTenantByUsedID(ctx context.Context, userID uuid.UUID) (Tena
 	return i, err
 }
 
-const updateTenant = `-- name: UpdateTenant :one
-UPDATE tenant
-SET tenant_name = $2, project_name = $3
-WHERE tenant_id = $1
-RETURNING user_id, tenant_id, tenant_name, project_name, image_url, created_at, updated_at, status, tier
+const getWorkspacesByUserID = `-- name: GetWorkspacesByUserID :many
+SELECT user_id, workspace_id, workspace_name, project_name, workspace_profile_image, created_at, updated_at, status, tier FROM workspace
+WHERE user_id = $1
+ORDER BY workspace_name ASC
 `
 
-type UpdateTenantParams struct {
-	TenantID    uuid.UUID `json:"tenant_id"`
-	TenantName  string    `json:"tenant_name"`
-	ProjectName string    `json:"project_name"`
+func (q *Queries) GetWorkspacesByUserID(ctx context.Context, userID uuid.UUID) ([]Workspace, error) {
+	rows, err := q.db.QueryContext(ctx, getWorkspacesByUserID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Workspace
+	for rows.Next() {
+		var i Workspace
+		if err := rows.Scan(
+			&i.UserID,
+			&i.WorkspaceID,
+			&i.WorkspaceName,
+			&i.ProjectName,
+			&i.WorkspaceProfileImage,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Status,
+			&i.Tier,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
-func (q *Queries) UpdateTenant(ctx context.Context, arg UpdateTenantParams) (Tenant, error) {
-	row := q.db.QueryRowContext(ctx, updateTenant, arg.TenantID, arg.TenantName, arg.ProjectName)
-	var i Tenant
+const updateWorkspace = `-- name: UpdateWorkspace :one
+UPDATE workspace
+SET workspace_name = $2, project_name = $3
+WHERE workspace_id = $1
+RETURNING user_id, workspace_id, workspace_name, project_name, workspace_profile_image, created_at, updated_at, status, tier
+`
+
+type UpdateWorkspaceParams struct {
+	WorkspaceID   uuid.UUID `json:"workspace_id"`
+	WorkspaceName string    `json:"workspace_name"`
+	ProjectName   string    `json:"project_name"`
+}
+
+func (q *Queries) UpdateWorkspace(ctx context.Context, arg UpdateWorkspaceParams) (Workspace, error) {
+	row := q.db.QueryRowContext(ctx, updateWorkspace, arg.WorkspaceID, arg.WorkspaceName, arg.ProjectName)
+	var i Workspace
 	err := row.Scan(
 		&i.UserID,
-		&i.TenantID,
-		&i.TenantName,
+		&i.WorkspaceID,
+		&i.WorkspaceName,
 		&i.ProjectName,
-		&i.ImageUrl,
+		&i.WorkspaceProfileImage,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Status,

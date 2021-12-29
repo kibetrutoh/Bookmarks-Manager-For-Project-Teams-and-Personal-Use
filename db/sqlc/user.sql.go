@@ -66,7 +66,8 @@ func (q *Queries) DeleteUser(ctx context.Context, userID uuid.UUID) error {
 
 const getUser = `-- name: GetUser :one
 SELECT user_id, full_name, email_address, hashed_password, hashed_password_updated_at, role, active, verification_code, verificaton_code_expires_at, created_at, updated_at, refresh_token_id FROM users
-WHERE user_id = $1 LIMIT 1
+WHERE user_id = $1
+LIMIT 1
 `
 
 func (q *Queries) GetUser(ctx context.Context, userID uuid.UUID) (User, error) {
@@ -91,7 +92,8 @@ func (q *Queries) GetUser(ctx context.Context, userID uuid.UUID) (User, error) {
 
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT user_id, full_name, email_address, hashed_password, hashed_password_updated_at, role, active, verification_code, verificaton_code_expires_at, created_at, updated_at, refresh_token_id FROM users
-WHERE email_address = $1 LIMIT 1
+WHERE email_address = $1
+LIMIT 1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, emailAddress string) (User, error) {
@@ -116,7 +118,8 @@ func (q *Queries) GetUserByEmail(ctx context.Context, emailAddress string) (User
 
 const getUserByVerificationCode = `-- name: GetUserByVerificationCode :one
 SELECT user_id, full_name, email_address, hashed_password, hashed_password_updated_at, role, active, verification_code, verificaton_code_expires_at, created_at, updated_at, refresh_token_id FROM users
-WHERE verification_code = $1 LIMIT 1
+WHERE verification_code = $1
+LIMIT 1
 `
 
 func (q *Queries) GetUserByVerificationCode(ctx context.Context, verificationCode string) (User, error) {

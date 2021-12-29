@@ -20,33 +20,33 @@ import (
 	"github.com/kibetrutoh/kibetgo/token"
 )
 
-type createTenantRequest struct {
-	TenantName  string `json:"tenant_name"`
-	ProjectName string `json:"project_name"`
+type createWorkspaceRequest struct {
+	WorkspaceName string `json:"workspace_name"`
+	ProjectName   string `json:"project_name"`
 }
 
-func (c createTenantRequest) validate() error {
+func (c createWorkspaceRequest) validate() error {
 	return validation.ValidateStruct(&c,
-		validation.Field(&c.TenantName, validation.Required, validation.Length(5, 500)),
+		validation.Field(&c.WorkspaceName, validation.Required, validation.Length(5, 500)),
 		validation.Field(&c.ProjectName, validation.Required),
 	)
 }
 
-type createTenantResponse struct {
-	TenantName  string    `json:"tenant_name"`
-	ProjectName string    `json:"project_name"`
-	UserID      uuid.UUID `json:"user_id"`
+type createWorkspaceResponse struct {
+	WorkspaceName string    `json:"workspace_name"`
+	ProjectName   string    `json:"project_name"`
+	UserID        uuid.UUID `json:"user_id"`
 }
 
-func newCreateTenantResponse(tenant sqlc.Tenant) createTenantResponse {
-	return createTenantResponse{
-		TenantName:  tenant.TenantName,
-		ProjectName: tenant.ProjectName,
-		UserID:      tenant.UserID,
+func newCreateWorkspaceResponse(workspace sqlc.Workspace) createWorkspaceResponse {
+	return createWorkspaceResponse{
+		WorkspaceName: workspace.WorkspaceName,
+		ProjectName:   workspace.ProjectName,
+		UserID:        workspace.UserID,
 	}
 }
 
-func (h *BaseHandler) CreateTenant(w http.ResponseWriter, r *http.Request) {
+func (h *BaseHandler) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Content-Type") != "application/json" {
 		w.Header().Set("Content-Type", "application/json")
 	}
@@ -85,7 +85,7 @@ func (h *BaseHandler) CreateTenant(w http.ResponseWriter, r *http.Request) {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			log.Println(pgErr.Message)
-			helpers.ErrorResponse(w, "internal server error", 500)
+			helpers.ErrorResponse(w, "something went wrong", 500)
 			return
 		}
 	}
@@ -102,12 +102,12 @@ func (h *BaseHandler) CreateTenant(w http.ResponseWriter, r *http.Request) {
 	data := json.NewDecoder(r.Body)
 	data.DisallowUnknownFields()
 
-	var req createTenantRequest
+	var req createWorkspaceRequest
 
 	err = data.Decode(&req)
 	if err != nil {
 		log.Println(err)
-		helpers.ErrorResponse(w, "internal server error", 500)
+		helpers.ErrorResponse(w, "something went wrong", 500)
 		return
 	}
 
@@ -120,49 +120,49 @@ func (h *BaseHandler) CreateTenant(w http.ResponseWriter, r *http.Request) {
 
 	user, _ := q.GetUserByEmail(context.Background(), uEmail)
 
-	tenant, err := q.CreateTenant(context.Background(), sqlc.CreateTenantParams{TenantName: req.TenantName, ProjectName: req.ProjectName, UserID: user.UserID})
+	workspace, err := q.CreateWorkspace(context.Background(), sqlc.CreateWorkspaceParams{WorkspaceName: req.WorkspaceName, ProjectName: req.ProjectName, UserID: user.UserID})
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			log.Println(pgErr.Message)
-			helpers.ErrorResponse(w, "internal server error", 500)
+			helpers.ErrorResponse(w, "something went wrong", 500)
 			return
 		}
 	}
 
-	resp := newCreateTenantResponse(tenant)
+	resp := newCreateWorkspaceResponse(workspace)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }
 
-type updateTenantRequest struct {
-	TenantName  string `json:"tenant_name"`
-	ProjectName string `json:"project_name"`
+type updateWorkspaceRequest struct {
+	WorkspaceName string `json:"workspace_name"`
+	ProjectName   string `json:"project_name"`
 }
 
-type updateTenantResponse struct {
-	TenantID    uuid.UUID `json:"tenant_id"`
-	TenantName  string    `json:"tenant_name"`
-	ProjectName string    `json:"project_name"`
+type updateWorkspaceResponse struct {
+	WorkspaceID   uuid.UUID `json:"workspace_id"`
+	WorkspaceName string    `json:"workspace_name"`
+	ProjectName   string    `json:"project_name"`
 }
 
-func newUpdateTenantResponse(tenant sqlc.Tenant) updateTenantResponse {
-	return updateTenantResponse{
-		TenantID:    tenant.TenantID,
-		TenantName:  tenant.TenantName,
-		ProjectName: tenant.ProjectName,
+func newUpdateWorkspaceResponse(workspace sqlc.Workspace) updateWorkspaceResponse {
+	return updateWorkspaceResponse{
+		WorkspaceID:   workspace.WorkspaceID,
+		WorkspaceName: workspace.WorkspaceName,
+		ProjectName:   workspace.ProjectName,
 	}
 }
 
-func (u updateTenantRequest) validate() error {
+func (u updateWorkspaceRequest) validate() error {
 	return validation.ValidateStruct(&u,
-		validation.Field(&u.TenantName, validation.Required, validation.Length(5, 500)),
+		validation.Field(&u.WorkspaceName, validation.Required, validation.Length(5, 500)),
 		validation.Field(&u.ProjectName, validation.Required),
 	)
 }
 
-func (h *BaseHandler) UpdateTenant(w http.ResponseWriter, r *http.Request) {
+func (h *BaseHandler) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Content-Type") != "application/json" {
 		w.Header().Set("Content-Type", "application/json")
 	}
@@ -216,14 +216,14 @@ func (h *BaseHandler) UpdateTenant(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	var req updateTenantRequest
+	var req updateWorkspaceRequest
 
 	body := json.NewDecoder(r.Body)
 	body.DisallowUnknownFields()
 
 	err = body.Decode(&req)
 	if err != nil {
-		helpers.ErrorResponse(w, "internal server error", 500)
+		helpers.ErrorResponse(w, "something went wrong", 500)
 		return
 	}
 
@@ -233,30 +233,30 @@ func (h *BaseHandler) UpdateTenant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tenant, err := q.GetTenant(context.Background(), uuid)
+	workspace, err := q.GetWorkspace(context.Background(), uuid)
 	switch {
 	case errors.As(err, &sql.ErrNoRows):
-		helpers.ErrorResponse(w, "tenant not found", 404)
+		helpers.ErrorResponse(w, "workspace not found", 404)
 		return
 	}
 
-	arg := sqlc.UpdateTenantParams{
-		TenantID:    tenant.TenantID,
-		TenantName:  req.TenantName,
-		ProjectName: req.ProjectName,
+	arg := sqlc.UpdateWorkspaceParams{
+		WorkspaceID:   workspace.WorkspaceID,
+		WorkspaceName: req.WorkspaceName,
+		ProjectName:   req.ProjectName,
 	}
 
-	tenant, err = q.UpdateTenant(context.Background(), arg)
+	workspace, err = q.UpdateWorkspace(context.Background(), arg)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			log.Println(pgErr.Message)
-			helpers.ErrorResponse(w, "internal server error", 500)
+			helpers.ErrorResponse(w, "something went wrong", 500)
 			return
 		}
 	}
 
-	resp := newUpdateTenantResponse(tenant)
+	resp := newUpdateWorkspaceResponse(workspace)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }

@@ -461,7 +461,7 @@ func (h *BaseHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	payload, err := token.VerifyAccessToken(reqToken)
 
 	if time.Now().UTC().After(payload.ExpiresAt) {
-		helpers.ErrorResponse(w, "token is invalid", 401)
+		helpers.ErrorResponse(w, "token is expired", 401)
 		return
 	}
 

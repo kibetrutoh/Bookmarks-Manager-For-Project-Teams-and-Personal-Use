@@ -9,31 +9,175 @@ import (
 	"github.com/google/uuid"
 )
 
-const inviteTenantUser = `-- name: InviteTenantUser :one
-INSERT INTO tenant_user (parent_tenant_id, email_address, invitation_token)
-VALUES ($1, $2, $3)
-RETURNING tenant_user_id, parent_tenant_id, full_name, email_address, hashed_password, access_level, invitation_token, accepted_invite, accepted_invite_on
+const deleteWorkspaceUser = `-- name: DeleteWorkspaceUser :exec
+DELETE FROM workspace_user
+WHERE workspace_user_id = $1
 `
 
-type InviteTenantUserParams struct {
-	ParentTenantID  uuid.UUID `json:"parent_tenant_id"`
-	EmailAddress    string    `json:"email_address"`
-	InvitationToken uuid.UUID `json:"invitation_token"`
+func (q *Queries) DeleteWorkspaceUser(ctx context.Context, workspaceUserID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteWorkspaceUser, workspaceUserID)
+	return err
 }
 
-func (q *Queries) InviteTenantUser(ctx context.Context, arg InviteTenantUserParams) (TenantUser, error) {
-	row := q.db.QueryRowContext(ctx, inviteTenantUser, arg.ParentTenantID, arg.EmailAddress, arg.InvitationToken)
-	var i TenantUser
+const getWorkspaceUser = `-- name: GetWorkspaceUser :one
+SELECT workspace_user_id, workspace_id, full_name, email_address, hashed_password, access_level, invitation_token, accepted_invitation, accepted_invitation_on FROM workspace_user
+WHERE workspace_user_id = $1
+LIMIT 1
+`
+
+func (q *Queries) GetWorkspaceUser(ctx context.Context, workspaceUserID uuid.UUID) (WorkspaceUser, error) {
+	row := q.db.QueryRowContext(ctx, getWorkspaceUser, workspaceUserID)
+	var i WorkspaceUser
 	err := row.Scan(
-		&i.TenantUserID,
-		&i.ParentTenantID,
+		&i.WorkspaceUserID,
+		&i.WorkspaceID,
 		&i.FullName,
 		&i.EmailAddress,
 		&i.HashedPassword,
 		&i.AccessLevel,
 		&i.InvitationToken,
-		&i.AcceptedInvite,
-		&i.AcceptedInviteOn,
+		&i.AcceptedInvitation,
+		&i.AcceptedInvitationOn,
+	)
+	return i, err
+}
+
+const getWorkspaceUserByInvitationToken = `-- name: GetWorkspaceUserByInvitationToken :one
+SELECT workspace_user_id, workspace_id, full_name, email_address, hashed_password, access_level, invitation_token, accepted_invitation, accepted_invitation_on FROM workspace_user
+WHERE invitation_token = $1
+LIMIT 1
+`
+
+func (q *Queries) GetWorkspaceUserByInvitationToken(ctx context.Context, invitationToken uuid.UUID) (WorkspaceUser, error) {
+	row := q.db.QueryRowContext(ctx, getWorkspaceUserByInvitationToken, invitationToken)
+	var i WorkspaceUser
+	err := row.Scan(
+		&i.WorkspaceUserID,
+		&i.WorkspaceID,
+		&i.FullName,
+		&i.EmailAddress,
+		&i.HashedPassword,
+		&i.AccessLevel,
+		&i.InvitationToken,
+		&i.AcceptedInvitation,
+		&i.AcceptedInvitationOn,
+	)
+	return i, err
+}
+
+const getWorkspaceUsersByWorspaceID = `-- name: GetWorkspaceUsersByWorspaceID :many
+SELECT workspace_user_id, workspace_id, full_name, email_address, hashed_password, access_level, invitation_token, accepted_invitation, accepted_invitation_on FROM workspace_user
+WHERE workspace_id = $1
+ORDER BY full_name ASC
+`
+
+func (q *Queries) GetWorkspaceUsersByWorspaceID(ctx context.Context, workspaceID uuid.UUID) ([]WorkspaceUser, error) {
+	rows, err := q.db.QueryContext(ctx, getWorkspaceUsersByWorspaceID, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []WorkspaceUser
+	for rows.Next() {
+		var i WorkspaceUser
+		if err := rows.Scan(
+			&i.WorkspaceUserID,
+			&i.WorkspaceID,
+			&i.FullName,
+			&i.EmailAddress,
+			&i.HashedPassword,
+			&i.AccessLevel,
+			&i.InvitationToken,
+			&i.AcceptedInvitation,
+			&i.AcceptedInvitationOn,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const inviteWorkspaceUser = `-- name: InviteWorkspaceUser :one
+INSERT INTO workspace_user (email_address, workspace_id, access_level, invitation_token)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (email_address) DO UPDATE
+SET workspace_id = EXCLUDED.workspace_id, invitation_token = EXCLUDED.invitation_token
+RETURNING workspace_user_id, workspace_id, full_name, email_address, hashed_password, access_level, invitation_token, accepted_invitation, accepted_invitation_on
+`
+
+type InviteWorkspaceUserParams struct {
+	EmailAddress    string    `json:"email_address"`
+	WorkspaceID     uuid.UUID `json:"workspace_id"`
+	AccessLevel     string    `json:"access_level"`
+	InvitationToken uuid.UUID `json:"invitation_token"`
+}
+
+func (q *Queries) InviteWorkspaceUser(ctx context.Context, arg InviteWorkspaceUserParams) (WorkspaceUser, error) {
+	row := q.db.QueryRowContext(ctx, inviteWorkspaceUser,
+		arg.EmailAddress,
+		arg.WorkspaceID,
+		arg.AccessLevel,
+		arg.InvitationToken,
+	)
+	var i WorkspaceUser
+	err := row.Scan(
+		&i.WorkspaceUserID,
+		&i.WorkspaceID,
+		&i.FullName,
+		&i.EmailAddress,
+		&i.HashedPassword,
+		&i.AccessLevel,
+		&i.InvitationToken,
+		&i.AcceptedInvitation,
+		&i.AcceptedInvitationOn,
+	)
+	return i, err
+}
+
+const updateAcceptedInvitationStatus = `-- name: UpdateAcceptedInvitationStatus :exec
+UPDATE workspace_user
+SET accepted_invitation = NOT accepted_invitation
+WHERE workspace_user_id = $1
+`
+
+func (q *Queries) UpdateAcceptedInvitationStatus(ctx context.Context, workspaceUserID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, updateAcceptedInvitationStatus, workspaceUserID)
+	return err
+}
+
+const updateWorkspaceUser = `-- name: UpdateWorkspaceUser :one
+UPDATE workspace_user
+SET full_name = $2, hashed_password = $3
+WHERE workspace_user_id = $1
+RETURNING workspace_user_id, workspace_id, full_name, email_address, hashed_password, access_level, invitation_token, accepted_invitation, accepted_invitation_on
+`
+
+type UpdateWorkspaceUserParams struct {
+	WorkspaceUserID uuid.UUID `json:"workspace_user_id"`
+	FullName        string    `json:"full_name"`
+	HashedPassword  string    `json:"hashed_password"`
+}
+
+func (q *Queries) UpdateWorkspaceUser(ctx context.Context, arg UpdateWorkspaceUserParams) (WorkspaceUser, error) {
+	row := q.db.QueryRowContext(ctx, updateWorkspaceUser, arg.WorkspaceUserID, arg.FullName, arg.HashedPassword)
+	var i WorkspaceUser
+	err := row.Scan(
+		&i.WorkspaceUserID,
+		&i.WorkspaceID,
+		&i.FullName,
+		&i.EmailAddress,
+		&i.HashedPassword,
+		&i.AccessLevel,
+		&i.InvitationToken,
+		&i.AcceptedInvitation,
+		&i.AcceptedInvitationOn,
 	)
 	return i, err
 }

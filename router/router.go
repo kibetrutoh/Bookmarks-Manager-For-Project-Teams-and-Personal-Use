@@ -33,10 +33,14 @@ func Router() *chi.Mux {
 
 	r.Post("/token/refresh-token", h.RefreshToken)
 
-	r.Post("/tenant/create-tenant", h.CreateTenant)
-	r.Put("/tenant/{uuid:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.UpdateTenant)
+	r.Post("/tenant/create-tenant", h.CreateWorkspace)
+	r.Put("/tenant/{uuid:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.UpdateWorkspace)
 
-	r.Post("/invite-tenant-user", h.InviteTenantUser)
+	r.Post("/invite-tenant-user", h.InviteWorkspaceUser)
+	r.Post("/{tenant-name:^[a-z]+$}/accept-invitation/{invitation-token:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.AcceptInvitation)
+	r.Get("/tenant-user/{uuid:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.GetWorkspaceUser)
+	r.Delete("/tenant-user/{uuid:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.DeleteWorkspaceUser)
+	r.Get("/tenant-tenant-users", h.GetWorkspaceUsersByWorspaceID)
 
 	return r
 }

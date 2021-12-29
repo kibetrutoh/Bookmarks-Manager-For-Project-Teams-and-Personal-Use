@@ -13,30 +13,6 @@ type BlacklistedAccessToken struct {
 	TokenID uuid.UUID `json:"token_id"`
 }
 
-type Tenant struct {
-	UserID      uuid.UUID      `json:"user_id"`
-	TenantID    uuid.UUID      `json:"tenant_id"`
-	TenantName  string         `json:"tenant_name"`
-	ProjectName string         `json:"project_name"`
-	ImageUrl    sql.NullString `json:"image_url"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
-	Status      string         `json:"status"`
-	Tier        string         `json:"tier"`
-}
-
-type TenantUser struct {
-	TenantUserID     uuid.UUID `json:"tenant_user_id"`
-	ParentTenantID   uuid.UUID `json:"parent_tenant_id"`
-	FullName         string    `json:"full_name"`
-	EmailAddress     string    `json:"email_address"`
-	HashedPassword   string    `json:"hashed_password"`
-	AccessLevel      string    `json:"access_level"`
-	InvitationToken  uuid.UUID `json:"invitation_token"`
-	AcceptedInvite   bool      `json:"accepted_invite"`
-	AcceptedInviteOn time.Time `json:"accepted_invite_on"`
-}
-
 type User struct {
 	UserID                   uuid.UUID      `json:"user_id"`
 	FullName                 string         `json:"full_name"`
@@ -54,4 +30,28 @@ type User struct {
 
 type UserProfile struct {
 	UserID uuid.UUID `json:"user_id"`
+}
+
+type Workspace struct {
+	UserID                uuid.UUID      `json:"user_id"`
+	WorkspaceID           uuid.UUID      `json:"workspace_id"`
+	WorkspaceName         string         `json:"workspace_name"`
+	ProjectName           string         `json:"project_name"`
+	WorkspaceProfileImage sql.NullString `json:"workspace_profile_image"`
+	CreatedAt             time.Time      `json:"created_at"`
+	UpdatedAt             time.Time      `json:"updated_at"`
+	Status                string         `json:"status"`
+	Tier                  string         `json:"tier"`
+}
+
+type WorkspaceUser struct {
+	WorkspaceUserID      uuid.UUID `json:"workspace_user_id"`
+	WorkspaceID          uuid.UUID `json:"workspace_id"`
+	FullName             string    `json:"full_name"`
+	EmailAddress         string    `json:"email_address"`
+	HashedPassword       string    `json:"hashed_password"`
+	AccessLevel          string    `json:"access_level"`
+	InvitationToken      uuid.UUID `json:"invitation_token"`
+	AcceptedInvitation   bool      `json:"accepted_invitation"`
+	AcceptedInvitationOn time.Time `json:"accepted_invitation_on"`
 }
