@@ -18,10 +18,10 @@ SELECT * FROM users
 ORDER BY full_name ASC;
 
 -- name: CreateUser :one
-INSERT INTO users (full_name, email_address, hashed_password, verification_code, verificaton_code_expires_at, created_at)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO users (user_id, full_name, email_address, hashed_password, verification_code, verificaton_code_expires_at, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 ON CONFLICT (email_address) DO UPDATE
-SET verification_code = EXCLUDED.verification_code, verificaton_code_expires_at = EXCLUDED.verificaton_code_expires_at, created_at = EXCLUDED.created_at, full_name = EXCLUDED.full_name, hashed_password = EXCLUDED.hashed_password
+SET verification_code = EXCLUDED.verification_code, verificaton_code_expires_at = EXCLUDED.verificaton_code_expires_at, created_at = EXCLUDED.created_at, full_name = EXCLUDED.full_name, hashed_password = EXCLUDED.hashed_password, user_id = EXCLUDED.user_id
 RETURNING *;
 
 -- name: UpdateUser :one

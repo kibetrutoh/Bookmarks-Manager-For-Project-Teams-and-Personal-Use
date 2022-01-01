@@ -12,12 +12,12 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/kibetrutoh/kibetgo/database"
 	"github.com/kibetrutoh/kibetgo/db/sqlc"
 	"github.com/kibetrutoh/kibetgo/helpers"
 	"github.com/kibetrutoh/kibetgo/token"
+	"github.com/kibetrutoh/kibetgo/utils"
 )
 
 type createWorkspaceRequest struct {
@@ -33,9 +33,9 @@ func (c createWorkspaceRequest) validate() error {
 }
 
 type createWorkspaceResponse struct {
-	WorkspaceName string    `json:"workspace_name"`
-	ProjectName   string    `json:"project_name"`
-	UserID        uuid.UUID `json:"user_id"`
+	WorkspaceName string `json:"workspace_name"`
+	ProjectName   string `json:"project_name"`
+	UserID        string `json:"user_id"`
 }
 
 func newCreateWorkspaceResponse(workspace sqlc.Workspace) createWorkspaceResponse {
@@ -120,7 +120,21 @@ func (h *BaseHandler) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	user, _ := q.GetUserByEmail(context.Background(), uEmail)
 
-	workspace, err := q.CreateWorkspace(context.Background(), sqlc.CreateWorkspaceParams{WorkspaceName: req.WorkspaceName, ProjectName: req.ProjectName, UserID: user.UserID})
+	workspace_id, err := utils.UniqueID(6)
+	if err != nil {
+		log.Println(err.Error())
+		helpers.ErrorResponse(w, "something went wrong", 500)
+		return
+	}
+
+	arg := sqlc.CreateWorkspaceParams{
+		WorkspaceID:   workspace_id,
+		WorkspaceName: req.WorkspaceName,
+		ProjectName:   req.ProjectName,
+		UserID:        user.UserID,
+	}
+
+	workspace, err := q.CreateWorkspace(context.Background(), arg)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
@@ -142,9 +156,9 @@ type updateWorkspaceRequest struct {
 }
 
 type updateWorkspaceResponse struct {
-	WorkspaceID   uuid.UUID `json:"workspace_id"`
-	WorkspaceName string    `json:"workspace_name"`
-	ProjectName   string    `json:"project_name"`
+	WorkspaceID   string `json:"workspace_id"`
+	WorkspaceName string `json:"workspace_name"`
+	ProjectName   string `json:"project_name"`
 }
 
 func newUpdateWorkspaceResponse(workspace sqlc.Workspace) updateWorkspaceResponse {
@@ -209,12 +223,7 @@ func (h *BaseHandler) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	uid := chi.URLParam(r, "uuid")
-
-	uuid, err := uuid.Parse(uid)
-	if err != nil {
-		panic(err)
-	}
+	id := chi.URLParam(r, "id")
 
 	var req updateWorkspaceRequest
 
@@ -233,7 +242,7 @@ func (h *BaseHandler) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workspace, err := q.GetWorkspace(context.Background(), uuid)
+	workspace, err := q.GetWorkspace(context.Background(), id)
 	switch {
 	case errors.As(err, &sql.ErrNoRows):
 		helpers.ErrorResponse(w, "workspace not found", 404)

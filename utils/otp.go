@@ -19,3 +19,18 @@ func GenerateOTP(length int) (string, error) {
 
 	return string(buffer), nil
 }
+
+func UniqueID(length int) (string, error) {
+	buffer := make([]byte, length)
+	_, err := rand.Read(buffer)
+	if err != nil {
+		return "", err
+	}
+
+	userIDLenth := len(otpChars)
+	for i := 0; i < length; i++ {
+		buffer[i] = otpChars[int(buffer[i])%userIDLenth]
+	}
+
+	return string(buffer), nil
+}

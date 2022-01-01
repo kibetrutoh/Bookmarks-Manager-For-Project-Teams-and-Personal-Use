@@ -7,7 +7,7 @@ DROP TABLE IF EXISTS workspace_user;
 DROP TABLE IF EXISTS blacklisted_access_tokens;
 
 CREATE TABLE users (
-  user_id UUID NOT NULL DEFAULT uuid_generate_v4() UNIQUE,
+  user_id TEXT NOT NULL UNIQUE,
   full_name TEXT NOT NULL,
   email_address TEXT NOT NULL UNIQUE,
   hashed_password TEXT NOT NULL,
@@ -27,15 +27,15 @@ CREATE TABLE blacklisted_access_tokens (
 );
 
 CREATE TABLE user_profile (
-  user_id UUID NOT NULL,
+  user_id TEXT NOT NULL,
   CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE,
   PRIMARY KEY(user_id)
 );
 
 CREATE TABLE workspace (
-  user_id UUID NOT NULL,
-  workspace_id UUID NOT NULL DEFAULT uuid_generate_v4() UNIQUE,
-  workspace_name TEXT NOT NULL UNIQUE,
+  user_id TEXT NOT NULL,
+  workspace_id TEXT NOT NULL UNIQUE,
+  workspace_name TEXT NOT NULL,
   project_name TEXT NOT NULL,
   workspace_profile_image TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -47,8 +47,8 @@ CREATE TABLE workspace (
 );
 
 CREATE TABLE workspace_user (
-  workspace_user_id UUID NOT NULL DEFAULT uuid_generate_v4() UNIQUE,
-  workspace_id UUID NOT NULL,
+  workspace_user_id TEXT NOT NULL UNIQUE,
+  workspace_id TEXT NOT NULL,
   full_name TEXT NOT NULL DEFAULT 'Default Full Name',
   email_address TEXT NOT NULL UNIQUE,
   hashed_password TEXT NOT NULL DEFAULT 'B33608080rm/2018/30333',

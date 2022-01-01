@@ -1,8 +1,8 @@
 -- name: InviteWorkspaceUser :one
-INSERT INTO workspace_user (email_address, workspace_id, access_level, invitation_token)
-VALUES ($1, $2, $3, $4)
+INSERT INTO workspace_user (workspace_user_id, email_address, workspace_id, access_level, invitation_token)
+VALUES ($1, $2, $3, $4, $5)
 ON CONFLICT (email_address) DO UPDATE
-SET workspace_id = EXCLUDED.workspace_id, invitation_token = EXCLUDED.invitation_token
+SET workspace_id = EXCLUDED.workspace_id, invitation_token = EXCLUDED.invitation_token, workspace_user_id = EXCLUDED.workspace_user_id
 RETURNING *;
 
 -- name: GetWorkspaceUserByInvitationToken :one

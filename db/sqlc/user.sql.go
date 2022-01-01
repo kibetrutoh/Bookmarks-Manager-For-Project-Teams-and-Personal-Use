@@ -11,14 +11,15 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (full_name, email_address, hashed_password, verification_code, verificaton_code_expires_at, created_at)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO users (user_id, full_name, email_address, hashed_password, verification_code, verificaton_code_expires_at, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 ON CONFLICT (email_address) DO UPDATE
-SET verification_code = EXCLUDED.verification_code, verificaton_code_expires_at = EXCLUDED.verificaton_code_expires_at, created_at = EXCLUDED.created_at, full_name = EXCLUDED.full_name, hashed_password = EXCLUDED.hashed_password
+SET verification_code = EXCLUDED.verification_code, verificaton_code_expires_at = EXCLUDED.verificaton_code_expires_at, created_at = EXCLUDED.created_at, full_name = EXCLUDED.full_name, hashed_password = EXCLUDED.hashed_password, user_id = EXCLUDED.user_id
 RETURNING user_id, full_name, email_address, hashed_password, hashed_password_updated_at, role, active, verification_code, verificaton_code_expires_at, created_at, updated_at, refresh_token_id
 `
 
 type CreateUserParams struct {
+	UserID                   string    `json:"user_id"`
 	FullName                 string    `json:"full_name"`
 	EmailAddress             string    `json:"email_address"`
 	HashedPassword           string    `json:"hashed_password"`
@@ -29,6 +30,7 @@ type CreateUserParams struct {
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRowContext(ctx, createUser,
+		arg.UserID,
 		arg.FullName,
 		arg.EmailAddress,
 		arg.HashedPassword,
@@ -59,7 +61,7 @@ DELETE FROM users
 WHERE user_id = $1
 `
 
-func (q *Queries) DeleteUser(ctx context.Context, userID uuid.UUID) error {
+func (q *Queries) DeleteUser(ctx context.Context, userID string) error {
 	_, err := q.db.ExecContext(ctx, deleteUser, userID)
 	return err
 }
@@ -70,7 +72,7 @@ WHERE user_id = $1
 LIMIT 1
 `
 
-func (q *Queries) GetUser(ctx context.Context, userID uuid.UUID) (User, error) {
+func (q *Queries) GetUser(ctx context.Context, userID string) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUser, userID)
 	var i User
 	err := row.Scan(
@@ -201,7 +203,7 @@ WHERE user_id = $1
 `
 
 type UpdateRefreshTokenParams struct {
-	UserID         uuid.UUID `json:"user_id"`
+	UserID         string    `json:"user_id"`
 	RefreshTokenID uuid.UUID `json:"refresh_token_id"`
 }
 
@@ -218,10 +220,10 @@ RETURNING user_id, full_name, email_address, hashed_password, hashed_password_up
 `
 
 type UpdateUserParams struct {
-	UserID         uuid.UUID `json:"user_id"`
-	FullName       string    `json:"full_name"`
-	EmailAddress   string    `json:"email_address"`
-	HashedPassword string    `json:"hashed_password"`
+	UserID         string `json:"user_id"`
+	FullName       string `json:"full_name"`
+	EmailAddress   string `json:"email_address"`
+	HashedPassword string `json:"hashed_password"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {

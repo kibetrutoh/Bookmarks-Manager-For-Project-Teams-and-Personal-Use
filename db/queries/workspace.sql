@@ -1,9 +1,6 @@
 -- name: CreateWorkspace :one
-INSERT INTO workspace (
-  workspace_name, project_name, user_id
-) VALUES (
-  $1, $2, $3
-)
+INSERT INTO workspace (workspace_id, workspace_name, project_name, user_id)
+VALUES ($1, $2, $3, $4)
 RETURNING *;
 
 -- name: GetWorkspace :one

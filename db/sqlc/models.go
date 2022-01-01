@@ -14,7 +14,7 @@ type BlacklistedAccessToken struct {
 }
 
 type User struct {
-	UserID                   uuid.UUID      `json:"user_id"`
+	UserID                   string         `json:"user_id"`
 	FullName                 string         `json:"full_name"`
 	EmailAddress             string         `json:"email_address"`
 	HashedPassword           string         `json:"hashed_password"`
@@ -29,12 +29,12 @@ type User struct {
 }
 
 type UserProfile struct {
-	UserID uuid.UUID `json:"user_id"`
+	UserID string `json:"user_id"`
 }
 
 type Workspace struct {
-	UserID                uuid.UUID      `json:"user_id"`
-	WorkspaceID           uuid.UUID      `json:"workspace_id"`
+	UserID                string         `json:"user_id"`
+	WorkspaceID           string         `json:"workspace_id"`
 	WorkspaceName         string         `json:"workspace_name"`
 	ProjectName           string         `json:"project_name"`
 	WorkspaceProfileImage sql.NullString `json:"workspace_profile_image"`
@@ -45,8 +45,8 @@ type Workspace struct {
 }
 
 type WorkspaceUser struct {
-	WorkspaceUserID      uuid.UUID `json:"workspace_user_id"`
-	WorkspaceID          uuid.UUID `json:"workspace_id"`
+	WorkspaceUserID      string    `json:"workspace_user_id"`
+	WorkspaceID          string    `json:"workspace_id"`
 	FullName             string    `json:"full_name"`
 	EmailAddress         string    `json:"email_address"`
 	HashedPassword       string    `json:"hashed_password"`

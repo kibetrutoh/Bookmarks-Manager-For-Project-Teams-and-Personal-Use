@@ -255,9 +255,9 @@ func (b *BaseHandler) AcceptInvitation(w http.ResponseWriter, r *http.Request) {
 }
 
 type get_workspace_user_response struct {
-	FullName     string    `json:"full_name"`
-	EmailAddress string    `json:"email_address"`
-	WorkspaceID  uuid.UUID `json:"workspace_id"`
+	FullName     string `json:"full_name"`
+	EmailAddress string `json:"email_address"`
+	WorkspaceID  string `json:"workspace_id"`
 }
 
 func newGetWorkspaceUserResponse(workspace_user sqlc.WorkspaceUser) get_workspace_user_response {
@@ -315,14 +315,9 @@ func (b *BaseHandler) GetWorkspaceUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	uid := chi.URLParam(r, "uuid")
+	id := chi.URLParam(r, "id")
 
-	workspace_user_uuid, err := uuid.Parse(uid)
-	if err != nil {
-		log.Println(err)
-	}
-
-	workspace_user, err := q.GetWorkspaceUser(context.Background(), workspace_user_uuid)
+	workspace_user, err := q.GetWorkspaceUser(context.Background(), id)
 	if err != nil {
 		log.Println(err.Error())
 		if errors.Is(err, sql.ErrNoRows) {
@@ -383,14 +378,9 @@ func (b *BaseHandler) DeleteWorkspaceUser(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	uid := chi.URLParam(r, "uuid")
+	id := chi.URLParam(r, "id")
 
-	workspace_user_uuid, err := uuid.Parse(uid)
-	if err != nil {
-		log.Println(err)
-	}
-
-	err = q.DeleteWorkspaceUser(context.Background(), workspace_user_uuid)
+	err = q.DeleteWorkspaceUser(context.Background(), id)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {

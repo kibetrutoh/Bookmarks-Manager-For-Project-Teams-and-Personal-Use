@@ -16,7 +16,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
-	"github.com/google/uuid"
 	"github.com/mailgun/mailgun-go/v4"
 
 	"github.com/jackc/pgconn"
@@ -124,7 +123,15 @@ func (h *BaseHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("ID: %s RES: %s\n", id, response)
 
+	user_id, err := utils.UniqueID(6)
+	if err != nil {
+		log.Println(err.Error())
+		helpers.ErrorResponse(w, "something went wrong", 500)
+		return
+	}
+
 	arg := sqlc.CreateUserParams{
+		UserID:                   user_id,
 		FullName:                 req.FullName,
 		EmailAddress:             req.EmailAddress,
 		HashedPassword:           hashedPassword,
@@ -491,14 +498,9 @@ func (h *BaseHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	id := chi.URLParam(r, "uuid")
+	id := chi.URLParam(r, "id")
 
-	uuid, err := uuid.Parse(id)
-	if err != nil {
-		log.Println(err)
-	}
-
-	user, err := q.GetUser(context.Background(), uuid)
+	user, err := q.GetUser(context.Background(), id)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		helpers.ErrorResponse(w, "user not found", 404)
@@ -573,14 +575,9 @@ func (h *BaseHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	id := chi.URLParam(r, "uuid")
+	id := chi.URLParam(r, "id")
 
-	uuid, err := uuid.Parse(id)
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = q.GetUser(context.Background(), uuid)
+	_, err = q.GetUser(context.Background(), id)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		helpers.ErrorResponse(w, "user not found", 404)
@@ -609,7 +606,7 @@ func (h *BaseHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	arg := sqlc.UpdateUserParams{
-		UserID:         uuid,
+		UserID:         id,
 		FullName:       req.FullName,
 		EmailAddress:   req.EmailAddress,
 		HashedPassword: hashedPassword,
@@ -672,21 +669,16 @@ func (h *BaseHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	id := chi.URLParam(r, "uuid")
+	id := chi.URLParam(r, "id")
 
-	uuid, err := uuid.Parse(id)
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = q.GetUser(context.Background(), uuid)
+	_, err = q.GetUser(context.Background(), id)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		helpers.ErrorResponse(w, "user not found", 404)
 		return
 	}
 
-	err = q.DeleteUser(context.Background(), uuid)
+	err = q.DeleteUser(context.Background(), id)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {

@@ -26,21 +26,24 @@ func Router() *chi.Mux {
 	r.Post("/account/verify-email", h.VerifyEmail)
 	r.Post("/account/login", h.Login)
 	r.Post("/account/logout", h.Logout)
-	r.Get("/account/{uuid:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.GetUser)
-	r.Put("/account/{uuid:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.UpdateUser)
-	r.Delete("/account/{uuid:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.DeleteUser)
+	r.Get("/account/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.GetUser)
+	r.Put("/account/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.UpdateUser)
+	r.Delete("/account/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.DeleteUser)
 	r.Get("/account/allusers", h.AllUsers)
 
 	r.Post("/token/refresh-token", h.RefreshToken)
 
 	r.Post("/tenant/create-tenant", h.CreateWorkspace)
-	r.Put("/tenant/{uuid:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.UpdateWorkspace)
+	r.Put("/tenant/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.UpdateWorkspace)
 
-	r.Post("/invite-tenant-user", h.InviteWorkspaceUser)
 	r.Post("/{tenant-name:^[a-z]+$}/accept-invitation/{invitation-token:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.AcceptInvitation)
-	r.Get("/tenant-user/{uuid:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.GetWorkspaceUser)
-	r.Delete("/tenant-user/{uuid:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.DeleteWorkspaceUser)
+	r.Get("/tenant-user/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.GetWorkspaceUser)
+	r.Delete("/tenant-user/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.DeleteWorkspaceUser)
 	r.Get("/tenant-tenant-users", h.GetWorkspaceUsersByWorspaceID)
+
+	r.Route("/workspace/{tenant:^[0-9]*$}", func(r chi.Router) {
+		r.Post("/invite-tenant-user", h.InviteWorkspaceUser)
+	})
 
 	return r
 }
