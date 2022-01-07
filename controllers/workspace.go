@@ -269,3 +269,11 @@ func (h *BaseHandler) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }
+
+func (b *BaseHandler) GetAllWorkspaces(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("get all workspaces"))
+}
+
+func (b *BaseHandler) FindWorkspaces(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("find workspaces"))
+}

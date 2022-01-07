@@ -8,6 +8,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/jackc/pgconn v1.10.0
 	github.com/jackc/pgx/v4 v4.13.0
+	github.com/mailgun/mailgun-go/v4 v4.6.0
 	github.com/o1egl/paseto v1.0.0
 	github.com/spf13/viper v1.9.0
 	golang.org/x/crypto v0.0.0-20211117183948-ae814b36b871
@@ -30,7 +31,6 @@ require (
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/lib/pq v1.10.3 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
-	github.com/mailgun/mailgun-go/v4 v4.6.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
