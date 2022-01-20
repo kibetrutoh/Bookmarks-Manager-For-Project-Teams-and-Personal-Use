@@ -13,45 +13,52 @@ type BlacklistedAccessToken struct {
 	TokenID uuid.UUID `json:"token_id"`
 }
 
+type EmailVerification struct {
+	EmailAddress              string    `json:"email_address"`
+	VerificationCode          string    `json:"verification_code"`
+	VerificationCodeExpiresAt time.Time `json:"verification_code_expires_at"`
+	Verified                  bool      `json:"verified"`
+}
+
+type Invite struct {
+	EmailAddress   string        `json:"email_address"`
+	InvitationCode string        `json:"invitation_code"`
+	WorkspaceID    sql.NullInt32 `json:"workspace_id"`
+	AccessLevel    string        `json:"access_level"`
+}
+
 type User struct {
-	UserID                   string         `json:"user_id"`
-	FullName                 string         `json:"full_name"`
-	EmailAddress             string         `json:"email_address"`
-	HashedPassword           string         `json:"hashed_password"`
-	HashedPasswordUpdatedAt  sql.NullTime   `json:"hashed_password_updated_at"`
-	Role                     sql.NullString `json:"role"`
-	Active                   bool           `json:"active"`
-	VerificationCode         string         `json:"verification_code"`
-	VerificatonCodeExpiresAt time.Time      `json:"verificaton_code_expires_at"`
-	CreatedAt                time.Time      `json:"created_at"`
-	UpdatedAt                time.Time      `json:"updated_at"`
-	RefreshTokenID           uuid.UUID      `json:"refresh_token_id"`
+	ID                int32     `json:"id"`
+	FullName          string    `json:"full_name"`
+	EmailAddress      string    `json:"email_address"`
+	Password          string    `json:"password"`
+	PasswordCreatedAt time.Time `json:"password_created_at"`
+	PasswordExpiresAt time.Time `json:"password_expires_at"`
+	PasswordUpdatedAt time.Time `json:"password_updated_at"`
+	Role              string    `json:"role"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
+	RefreshTokenID    uuid.UUID `json:"refresh_token_id"`
 }
 
 type UserProfile struct {
-	UserID string `json:"user_id"`
+	UserID int32 `json:"user_id"`
 }
 
 type Workspace struct {
-	UserID                string         `json:"user_id"`
-	WorkspaceID           string         `json:"workspace_id"`
-	WorkspaceName         string         `json:"workspace_name"`
-	ProjectName           string         `json:"project_name"`
-	WorkspaceProfileImage sql.NullString `json:"workspace_profile_image"`
-	CreatedAt             time.Time      `json:"created_at"`
-	UpdatedAt             time.Time      `json:"updated_at"`
-	Status                string         `json:"status"`
-	Tier                  string         `json:"tier"`
+	UserID       sql.NullInt32  `json:"user_id"`
+	ID           int32          `json:"id"`
+	Name         string         `json:"name"`
+	ProfileImage sql.NullString `json:"profile_image"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	Status       string         `json:"status"`
+	Tier         string         `json:"tier"`
 }
 
 type WorkspaceUser struct {
-	WorkspaceUserID      string    `json:"workspace_user_id"`
-	WorkspaceID          string    `json:"workspace_id"`
-	FullName             string    `json:"full_name"`
-	EmailAddress         string    `json:"email_address"`
-	HashedPassword       string    `json:"hashed_password"`
-	AccessLevel          string    `json:"access_level"`
-	InvitationToken      uuid.UUID `json:"invitation_token"`
-	AcceptedInvitation   bool      `json:"accepted_invitation"`
-	AcceptedInvitationOn time.Time `json:"accepted_invitation_on"`
+	UserID      sql.NullInt32 `json:"user_id"`
+	WorkspaceID sql.NullInt32 `json:"workspace_id"`
+	AccessLevel string        `json:"access_level"`
+	JoinedOn    time.Time     `json:"joined_on"`
 }

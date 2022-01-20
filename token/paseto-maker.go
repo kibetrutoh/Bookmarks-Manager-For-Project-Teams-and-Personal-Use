@@ -7,8 +7,8 @@ import (
 	"github.com/o1egl/paseto"
 )
 
-func CreateAccessToken(email string) (string, error) {
-	payload, err := AccessTokenPayload(email)
+func CreateAccessToken(userID string) (string, error) {
+	payload, err := AccessTokenPayload(userID)
 	if err != nil {
 		return "", err
 	}
@@ -37,16 +37,11 @@ func VerifyAccessToken(token string) (*Payload, error) {
 		return nil, ErrInvalidToken
 	}
 
-	// err = payload.Valid()
-	// if err != nil {
-	// 	return nil, err
-	// }
-
 	return payload, nil
 }
 
-func CreateRefreshToken(email string) (string, error) {
-	payload, err := RefreshTokenPayload(email)
+func CreateRefreshToken(userID string) (string, error) {
+	payload, err := RefreshTokenPayload(userID)
 	if err != nil {
 		return "", err
 	}

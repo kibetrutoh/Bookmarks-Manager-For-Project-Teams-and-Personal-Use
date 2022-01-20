@@ -5,148 +5,56 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createWorkspace = `-- name: CreateWorkspace :one
-INSERT INTO workspace (workspace_id, workspace_name, project_name, user_id)
-VALUES ($1, $2, $3, $4)
-RETURNING user_id, workspace_id, workspace_name, project_name, workspace_profile_image, created_at, updated_at, status, tier
+INSERT INTO workspace (user_id, name)
+VALUES ($1, $2)
+RETURNING user_id, id, name, profile_image, created_at, updated_at, status, tier
 `
 
 type CreateWorkspaceParams struct {
-	WorkspaceID   string `json:"workspace_id"`
-	WorkspaceName string `json:"workspace_name"`
-	ProjectName   string `json:"project_name"`
-	UserID        string `json:"user_id"`
+	UserID sql.NullInt32 `json:"user_id"`
+	Name   string        `json:"name"`
 }
 
 func (q *Queries) CreateWorkspace(ctx context.Context, arg CreateWorkspaceParams) (Workspace, error) {
-	row := q.db.QueryRowContext(ctx, createWorkspace,
-		arg.WorkspaceID,
-		arg.WorkspaceName,
-		arg.ProjectName,
-		arg.UserID,
-	)
+	row := q.db.QueryRowContext(ctx, createWorkspace, arg.UserID, arg.Name)
 	var i Workspace
 	err := row.Scan(
 		&i.UserID,
-		&i.WorkspaceID,
-		&i.WorkspaceName,
-		&i.ProjectName,
-		&i.WorkspaceProfileImage,
+		&i.ID,
+		&i.Name,
+		&i.ProfileImage,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Status,
 		&i.Tier,
 	)
 	return i, err
-}
-
-const getWorkspace = `-- name: GetWorkspace :one
-SELECT user_id, workspace_id, workspace_name, project_name, workspace_profile_image, created_at, updated_at, status, tier FROM workspace
-WHERE workspace_id = $1 LIMIT 1
-`
-
-func (q *Queries) GetWorkspace(ctx context.Context, workspaceID string) (Workspace, error) {
-	row := q.db.QueryRowContext(ctx, getWorkspace, workspaceID)
-	var i Workspace
-	err := row.Scan(
-		&i.UserID,
-		&i.WorkspaceID,
-		&i.WorkspaceName,
-		&i.ProjectName,
-		&i.WorkspaceProfileImage,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.Status,
-		&i.Tier,
-	)
-	return i, err
-}
-
-const getWorkspaceByUsedID = `-- name: GetWorkspaceByUsedID :one
-SELECT user_id, workspace_id, workspace_name, project_name, workspace_profile_image, created_at, updated_at, status, tier FROM workspace
-WHERE user_id = $1 LIMIT 1
-`
-
-func (q *Queries) GetWorkspaceByUsedID(ctx context.Context, userID string) (Workspace, error) {
-	row := q.db.QueryRowContext(ctx, getWorkspaceByUsedID, userID)
-	var i Workspace
-	err := row.Scan(
-		&i.UserID,
-		&i.WorkspaceID,
-		&i.WorkspaceName,
-		&i.ProjectName,
-		&i.WorkspaceProfileImage,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.Status,
-		&i.Tier,
-	)
-	return i, err
-}
-
-const getWorkspacesByUserID = `-- name: GetWorkspacesByUserID :many
-SELECT user_id, workspace_id, workspace_name, project_name, workspace_profile_image, created_at, updated_at, status, tier FROM workspace
-WHERE user_id = $1
-ORDER BY workspace_name ASC
-`
-
-func (q *Queries) GetWorkspacesByUserID(ctx context.Context, userID string) ([]Workspace, error) {
-	rows, err := q.db.QueryContext(ctx, getWorkspacesByUserID, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Workspace
-	for rows.Next() {
-		var i Workspace
-		if err := rows.Scan(
-			&i.UserID,
-			&i.WorkspaceID,
-			&i.WorkspaceName,
-			&i.ProjectName,
-			&i.WorkspaceProfileImage,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.Status,
-			&i.Tier,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const updateWorkspace = `-- name: UpdateWorkspace :one
 UPDATE workspace
-SET workspace_name = $2, project_name = $3
-WHERE workspace_id = $1
-RETURNING user_id, workspace_id, workspace_name, project_name, workspace_profile_image, created_at, updated_at, status, tier
+SET name = $2
+WHERE id = $1
+RETURNING user_id, id, name, profile_image, created_at, updated_at, status, tier
 `
 
 type UpdateWorkspaceParams struct {
-	WorkspaceID   string `json:"workspace_id"`
-	WorkspaceName string `json:"workspace_name"`
-	ProjectName   string `json:"project_name"`
+	ID   int32  `json:"id"`
+	Name string `json:"name"`
 }
 
 func (q *Queries) UpdateWorkspace(ctx context.Context, arg UpdateWorkspaceParams) (Workspace, error) {
-	row := q.db.QueryRowContext(ctx, updateWorkspace, arg.WorkspaceID, arg.WorkspaceName, arg.ProjectName)
+	row := q.db.QueryRowContext(ctx, updateWorkspace, arg.ID, arg.Name)
 	var i Workspace
 	err := row.Scan(
 		&i.UserID,
-		&i.WorkspaceID,
-		&i.WorkspaceName,
-		&i.ProjectName,
-		&i.WorkspaceProfileImage,
+		&i.ID,
+		&i.Name,
+		&i.ProfileImage,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Status,

@@ -5,5 +5,5 @@ INSERT INTO blacklisted_access_tokens (
   $1
 );
 
--- name: ListBlacklistedAcessTokens :many
+-- name: BlacklistAccessToken :many
 SELECT * FROM blacklisted_access_tokens;

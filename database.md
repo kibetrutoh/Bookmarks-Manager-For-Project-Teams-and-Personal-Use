@@ -1,0 +1,4 @@
+- a user has many workspaces
+- a workspace belongs to only one user
+- a workspace has many users
+- a user belongs to many workspaces

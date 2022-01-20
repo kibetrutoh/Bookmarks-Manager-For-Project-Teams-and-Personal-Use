@@ -15,12 +15,12 @@ var (
 
 type Payload struct {
 	ID        uuid.UUID `json:"id"`
-	Email     string    `json:"email"`
+	UserID    string    `json:"user_id"`
 	IssuedAt  time.Time `json:"issued_at"`
 	ExpiresAt time.Time `json:"expired_at"`
 }
 
-func AccessTokenPayload(email string) (*Payload, error) {
+func AccessTokenPayload(userID string) (*Payload, error) {
 	tokenID, err := uuid.NewRandom()
 	if err != nil {
 		return nil, err
@@ -28,22 +28,22 @@ func AccessTokenPayload(email string) (*Payload, error) {
 
 	payload := &Payload{
 		ID:        tokenID,
-		Email:     email,
+		UserID:    userID,
 		IssuedAt:  time.Now().UTC(),
 		ExpiresAt: time.Now().UTC().Add(24 * time.Hour),
 	}
 	return payload, nil
 }
 
-func RefreshTokenPayload(email string) (*Payload, error) {
+func RefreshTokenPayload(userID string) (*Payload, error) {
 	tokenID, err := uuid.NewRandom()
 	if err != nil {
 		return nil, err
 	}
 
 	payload := &Payload{
-		ID:    tokenID,
-		Email: email,
+		ID:     tokenID,
+		UserID: userID,
 	}
 
 	return payload, nil
