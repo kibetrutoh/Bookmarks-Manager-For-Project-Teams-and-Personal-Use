@@ -13,6 +13,7 @@ type Config struct {
 	MailgunAPIKey     string `mapstructure:"MAILGUN_PRIVATE_API_KEY"`
 	Access_Token_Key  string `mapstructure:"ACCESS_TOKEN_KEY"`
 	Refresh_Token_Key string `mapstructure:"REFRESH_TOKEN_KEY"`
+	PasswordString    string `mapstructure:"PASSWORD_STRING"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

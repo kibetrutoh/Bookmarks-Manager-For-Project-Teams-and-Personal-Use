@@ -9,15 +9,10 @@ import (
 	"github.com/google/uuid"
 )
 
-type BlacklistedAccessToken struct {
-	TokenID uuid.UUID `json:"token_id"`
-}
-
 type EmailVerification struct {
 	EmailAddress              string    `json:"email_address"`
 	VerificationCode          string    `json:"verification_code"`
 	VerificationCodeExpiresAt time.Time `json:"verification_code_expires_at"`
-	Verified                  bool      `json:"verified"`
 }
 
 type Invite struct {
@@ -27,18 +22,26 @@ type Invite struct {
 	AccessLevel    string        `json:"access_level"`
 }
 
+type LoginMagicCode struct {
+	MagicCode       string    `json:"magic_code"`
+	EmailAddress    string    `json:"email_address"`
+	MagicCodeExpiry time.Time `json:"magic_code_expiry"`
+}
+
+type TokenPair struct {
+	UserID         int32     `json:"user_id"`
+	AccessTokenID  uuid.UUID `json:"access_token_id"`
+	RefreshTokenID uuid.UUID `json:"refresh_token_id"`
+}
+
 type User struct {
-	ID                int32     `json:"id"`
-	FullName          string    `json:"full_name"`
-	EmailAddress      string    `json:"email_address"`
-	Password          string    `json:"password"`
-	PasswordCreatedAt time.Time `json:"password_created_at"`
-	PasswordExpiresAt time.Time `json:"password_expires_at"`
-	PasswordUpdatedAt time.Time `json:"password_updated_at"`
-	Role              string    `json:"role"`
-	CreatedAt         time.Time `json:"created_at"`
-	UpdatedAt         time.Time `json:"updated_at"`
-	RefreshTokenID    uuid.UUID `json:"refresh_token_id"`
+	ID           int32     `json:"id"`
+	FullName     string    `json:"full_name"`
+	EmailAddress string    `json:"email_address"`
+	Password     string    `json:"password"`
+	Role         string    `json:"role"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 type UserProfile struct {
@@ -46,7 +49,7 @@ type UserProfile struct {
 }
 
 type Workspace struct {
-	UserID       sql.NullInt32  `json:"user_id"`
+	UserID       int32          `json:"user_id"`
 	ID           int32          `json:"id"`
 	Name         string         `json:"name"`
 	ProfileImage sql.NullString `json:"profile_image"`
@@ -57,8 +60,8 @@ type Workspace struct {
 }
 
 type WorkspaceUser struct {
-	UserID      sql.NullInt32 `json:"user_id"`
-	WorkspaceID sql.NullInt32 `json:"workspace_id"`
-	AccessLevel string        `json:"access_level"`
-	JoinedOn    time.Time     `json:"joined_on"`
+	UserID      int32     `json:"user_id"`
+	WorkspaceID int32     `json:"workspace_id"`
+	AccessLevel string    `json:"access_level"`
+	JoinedOn    time.Time `json:"joined_on"`
 }

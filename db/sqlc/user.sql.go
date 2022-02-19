@@ -6,47 +6,45 @@ package sqlc
 import (
 	"context"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (full_name, email_address, password, password_expires_at)
-VALUES ($1, $2, $3, $4)
+INSERT INTO users (full_name, email_address, password)
+VALUES ($1, $2, $3)
 ON CONFLICT (email_address) DO UPDATE
-SET full_name = EXCLUDED.full_name, password = EXCLUDED.password, password_expires_at = EXCLUDED.password_expires_at
-RETURNING id, full_name, email_address, password, password_created_at, password_expires_at, password_updated_at, role, created_at, updated_at, refresh_token_id
+SET full_name = EXCLUDED.full_name, password = EXCLUDED.password
+RETURNING id, full_name, email_address, password, role, created_at, updated_at
 `
 
 type CreateUserParams struct {
-	FullName          string    `json:"full_name"`
-	EmailAddress      string    `json:"email_address"`
-	Password          string    `json:"password"`
-	PasswordExpiresAt time.Time `json:"password_expires_at"`
+	FullName     string `json:"full_name"`
+	EmailAddress string `json:"email_address"`
+	Password     string `json:"password"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser,
-		arg.FullName,
-		arg.EmailAddress,
-		arg.Password,
-		arg.PasswordExpiresAt,
-	)
+	row := q.db.QueryRowContext(ctx, createUser, arg.FullName, arg.EmailAddress, arg.Password)
 	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.FullName,
 		&i.EmailAddress,
 		&i.Password,
-		&i.PasswordCreatedAt,
-		&i.PasswordExpiresAt,
-		&i.PasswordUpdatedAt,
 		&i.Role,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.RefreshTokenID,
 	)
 	return i, err
+}
+
+const deleteEmail = `-- name: DeleteEmail :exec
+DELETE FROM email_verification
+WHERE verification_code = $1
+`
+
+func (q *Queries) DeleteEmail(ctx context.Context, verificationCode string) error {
+	_, err := q.db.ExecContext(ctx, deleteEmail, verificationCode)
+	return err
 }
 
 const deleteUser = `-- name: DeleteUser :exec
@@ -60,7 +58,7 @@ func (q *Queries) DeleteUser(ctx context.Context, id int32) error {
 }
 
 const getEmailByVerificationCode = `-- name: GetEmailByVerificationCode :one
-SELECT email_address, verification_code, verification_code_expires_at, verified FROM email_verification
+SELECT email_address, verification_code, verification_code_expires_at FROM email_verification
 WHERE verification_code = $1
 LIMIT 1
 `
@@ -68,17 +66,12 @@ LIMIT 1
 func (q *Queries) GetEmailByVerificationCode(ctx context.Context, verificationCode string) (EmailVerification, error) {
 	row := q.db.QueryRowContext(ctx, getEmailByVerificationCode, verificationCode)
 	var i EmailVerification
-	err := row.Scan(
-		&i.EmailAddress,
-		&i.VerificationCode,
-		&i.VerificationCodeExpiresAt,
-		&i.Verified,
-	)
+	err := row.Scan(&i.EmailAddress, &i.VerificationCode, &i.VerificationCodeExpiresAt)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, full_name, email_address, password, password_created_at, password_expires_at, password_updated_at, role, created_at, updated_at, refresh_token_id FROM users
+SELECT id, full_name, email_address, password, role, created_at, updated_at FROM users
 WHERE email_address = $1
 LIMIT 1
 `
@@ -91,13 +84,9 @@ func (q *Queries) GetUserByEmail(ctx context.Context, emailAddress string) (User
 		&i.FullName,
 		&i.EmailAddress,
 		&i.Password,
-		&i.PasswordCreatedAt,
-		&i.PasswordExpiresAt,
-		&i.PasswordUpdatedAt,
 		&i.Role,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.RefreshTokenID,
 	)
 	return i, err
 }
@@ -106,7 +95,7 @@ const updateEmail = `-- name: UpdateEmail :one
 UPDATE users
 SET email_address = $2
 WHERE id = $1
-RETURNING id, full_name, email_address, password, password_created_at, password_expires_at, password_updated_at, role, created_at, updated_at, refresh_token_id
+RETURNING id, full_name, email_address, password, role, created_at, updated_at
 `
 
 type UpdateEmailParams struct {
@@ -122,32 +111,9 @@ func (q *Queries) UpdateEmail(ctx context.Context, arg UpdateEmailParams) (User,
 		&i.FullName,
 		&i.EmailAddress,
 		&i.Password,
-		&i.PasswordCreatedAt,
-		&i.PasswordExpiresAt,
-		&i.PasswordUpdatedAt,
 		&i.Role,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.RefreshTokenID,
-	)
-	return i, err
-}
-
-const updateEmailVerifiedStatus = `-- name: UpdateEmailVerifiedStatus :one
-UPDATE email_verification
-SET verified = NOT verified
-WHERE email_address = $1
-RETURNING email_address, verification_code, verification_code_expires_at, verified
-`
-
-func (q *Queries) UpdateEmailVerifiedStatus(ctx context.Context, emailAddress string) (EmailVerification, error) {
-	row := q.db.QueryRowContext(ctx, updateEmailVerifiedStatus, emailAddress)
-	var i EmailVerification
-	err := row.Scan(
-		&i.EmailAddress,
-		&i.VerificationCode,
-		&i.VerificationCodeExpiresAt,
-		&i.Verified,
 	)
 	return i, err
 }
@@ -156,7 +122,7 @@ const updateFullname = `-- name: UpdateFullname :one
 UPDATE users
 SET full_name = $2
 WHERE id = $1
-RETURNING id, full_name, email_address, password, password_created_at, password_expires_at, password_updated_at, role, created_at, updated_at, refresh_token_id
+RETURNING id, full_name, email_address, password, role, created_at, updated_at
 `
 
 type UpdateFullnameParams struct {
@@ -172,13 +138,9 @@ func (q *Queries) UpdateFullname(ctx context.Context, arg UpdateFullnameParams) 
 		&i.FullName,
 		&i.EmailAddress,
 		&i.Password,
-		&i.PasswordCreatedAt,
-		&i.PasswordExpiresAt,
-		&i.PasswordUpdatedAt,
 		&i.Role,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.RefreshTokenID,
 	)
 	return i, err
 }
@@ -187,7 +149,7 @@ const updatePassword = `-- name: UpdatePassword :one
 UPDATE users
 SET password = $2
 WHERE id = $1
-RETURNING id, full_name, email_address, password, password_created_at, password_expires_at, password_updated_at, role, created_at, updated_at, refresh_token_id
+RETURNING id, full_name, email_address, password, role, created_at, updated_at
 `
 
 type UpdatePasswordParams struct {
@@ -203,35 +165,15 @@ func (q *Queries) UpdatePassword(ctx context.Context, arg UpdatePasswordParams) 
 		&i.FullName,
 		&i.EmailAddress,
 		&i.Password,
-		&i.PasswordCreatedAt,
-		&i.PasswordExpiresAt,
-		&i.PasswordUpdatedAt,
 		&i.Role,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.RefreshTokenID,
 	)
 	return i, err
 }
 
-const updateRefreshToken = `-- name: UpdateRefreshToken :exec
-UPDATE users
-SET refresh_token_id = $2
-WHERE id = $1
-`
-
-type UpdateRefreshTokenParams struct {
-	ID             int32     `json:"id"`
-	RefreshTokenID uuid.UUID `json:"refresh_token_id"`
-}
-
-func (q *Queries) UpdateRefreshToken(ctx context.Context, arg UpdateRefreshTokenParams) error {
-	_, err := q.db.ExecContext(ctx, updateRefreshToken, arg.ID, arg.RefreshTokenID)
-	return err
-}
-
 const user = `-- name: User :one
-SELECT id, full_name, email_address, password, password_created_at, password_expires_at, password_updated_at, role, created_at, updated_at, refresh_token_id FROM users
+SELECT id, full_name, email_address, password, role, created_at, updated_at FROM users
 WHERE id = $1
 LIMIT 1
 `
@@ -244,19 +186,15 @@ func (q *Queries) User(ctx context.Context, id int32) (User, error) {
 		&i.FullName,
 		&i.EmailAddress,
 		&i.Password,
-		&i.PasswordCreatedAt,
-		&i.PasswordExpiresAt,
-		&i.PasswordUpdatedAt,
 		&i.Role,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.RefreshTokenID,
 	)
 	return i, err
 }
 
 const users = `-- name: Users :many
-SELECT id, full_name, email_address, password, password_created_at, password_expires_at, password_updated_at, role, created_at, updated_at, refresh_token_id FROM users
+SELECT id, full_name, email_address, password, role, created_at, updated_at FROM users
 ORDER BY full_name ASC
 `
 
@@ -274,13 +212,9 @@ func (q *Queries) Users(ctx context.Context) ([]User, error) {
 			&i.FullName,
 			&i.EmailAddress,
 			&i.Password,
-			&i.PasswordCreatedAt,
-			&i.PasswordExpiresAt,
-			&i.PasswordUpdatedAt,
 			&i.Role,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.RefreshTokenID,
 		); err != nil {
 			return nil, err
 		}
@@ -300,7 +234,7 @@ INSERT INTO email_verification (email_address, verification_code, verification_c
 VALUES ($1, $2, $3)
 ON CONFLICT (email_address) DO UPDATE
 SET verification_code = EXCLUDED.verification_code, verification_code_expires_at = EXCLUDED.verification_code_expires_at
-RETURNING email_address, verification_code, verification_code_expires_at, verified
+RETURNING email_address, verification_code, verification_code_expires_at
 `
 
 type VerifyEmailParams struct {
@@ -312,11 +246,6 @@ type VerifyEmailParams struct {
 func (q *Queries) VerifyEmail(ctx context.Context, arg VerifyEmailParams) (EmailVerification, error) {
 	row := q.db.QueryRowContext(ctx, verifyEmail, arg.EmailAddress, arg.VerificationCode, arg.VerificationCodeExpiresAt)
 	var i EmailVerification
-	err := row.Scan(
-		&i.EmailAddress,
-		&i.VerificationCode,
-		&i.VerificationCodeExpiresAt,
-		&i.Verified,
-	)
+	err := row.Scan(&i.EmailAddress, &i.VerificationCode, &i.VerificationCodeExpiresAt)
 	return i, err
 }

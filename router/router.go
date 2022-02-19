@@ -18,13 +18,9 @@ func Router() *chi.Mux {
 	r.Use(middleware.RedirectSlashes)
 
 	db := database.ConnectDB()
-	h := controllers.NewBaseHandler(db)
+	controllers := controllers.NewBaseHandler(db)
 
-	r.Get("/", h.HelloWorld)
-	// r.Post("/account/signup", h.SignUp)
-	// r.Post("/account/verify-email/{userEmail:^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$}/{eVerificationCode:^[0-9]*$}", h.ValidateUser)
-	// r.Post("/account/verifyemail", h.VerifyEmail)
-	// r.Post("/account/login", h.Login)
+	r.Get("/", controllers.HelloWorld)
 
 	// r.Post("/account/logout", h.Logout)
 	// r.Get("/account/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.GetUser)
@@ -52,7 +48,10 @@ func Router() *chi.Mux {
 	// })
 
 	r.Route("/account", func(r chi.Router) {
-		r.Post("/new", h.SignUp)
+		r.Post("/signup", controllers.SignUp)
+		r.Post("/confirmemail", controllers.ConfirmEmail)
+		r.Post("/loginrequest", controllers.LoginRequest)
+		r.Post("/login", controllers.Login)
 	})
 
 	return r

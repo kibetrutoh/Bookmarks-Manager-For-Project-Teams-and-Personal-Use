@@ -1,6 +1,9 @@
-// get workspace members
+// logout user
 
-- get and verify access token
-- get workspace id from url
-- check if workspace exists else return error
-- get worspace members from db where workspace id = workspace id
+- delete access token from client
+- delete user (+ access & refresh tokens) from active token pairs
+
+* get access token
+* get user id from token
+* get user from token_pair table by user id
+* delete the user record from token_pair table

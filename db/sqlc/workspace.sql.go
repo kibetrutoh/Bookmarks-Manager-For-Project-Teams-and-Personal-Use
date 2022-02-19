@@ -5,7 +5,6 @@ package sqlc
 
 import (
 	"context"
-	"database/sql"
 )
 
 const createWorkspace = `-- name: CreateWorkspace :one
@@ -15,8 +14,8 @@ RETURNING user_id, id, name, profile_image, created_at, updated_at, status, tier
 `
 
 type CreateWorkspaceParams struct {
-	UserID sql.NullInt32 `json:"user_id"`
-	Name   string        `json:"name"`
+	UserID int32  `json:"user_id"`
+	Name   string `json:"name"`
 }
 
 func (q *Queries) CreateWorkspace(ctx context.Context, arg CreateWorkspaceParams) (Workspace, error) {

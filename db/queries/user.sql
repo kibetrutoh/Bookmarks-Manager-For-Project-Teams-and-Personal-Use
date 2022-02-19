@@ -10,17 +10,15 @@ SELECT * FROM email_verification
 WHERE verification_code = $1
 LIMIT 1;
 
--- name: UpdateEmailVerifiedStatus :one
-UPDATE email_verification
-SET verified = NOT verified
-WHERE email_address = $1
-RETURNING *;
+-- name: DeleteEmail :exec
+DELETE FROM email_verification
+WHERE verification_code = $1;
 
 -- name: CreateUser :one
-INSERT INTO users (full_name, email_address, password, password_expires_at)
-VALUES ($1, $2, $3, $4)
+INSERT INTO users (full_name, email_address, password)
+VALUES ($1, $2, $3)
 ON CONFLICT (email_address) DO UPDATE
-SET full_name = EXCLUDED.full_name, password = EXCLUDED.password, password_expires_at = EXCLUDED.password_expires_at
+SET full_name = EXCLUDED.full_name, password = EXCLUDED.password
 RETURNING *;
 
 -- name: User :one
@@ -57,9 +55,4 @@ RETURNING *;
 
 -- name: DeleteUser :exec
 DELETE FROM users
-WHERE id = $1;
-
--- name: UpdateRefreshToken :exec
-UPDATE users
-SET refresh_token_id = $2
 WHERE id = $1;
