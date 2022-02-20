@@ -1,6 +1,6 @@
 package controllers
 
-//// https://techinscribed.com/different-approaches-to-pass-database-connection-into-controllers-in-golang/
+// https://techinscribed.com/different-approaches-to-pass-database-connection-into-controllers-in-golang/
 
 import (
 	"context"
@@ -26,7 +26,6 @@ import (
 	"github.com/kibetrutoh/kibetgo/token"
 )
 
-// // init common errors
 var (
 	ErrInvalidToken        = errors.New("invalid token")
 	ErrNoToken             = errors.New("no token associated with this account")
@@ -43,25 +42,21 @@ func (b *BaseHandler) HelloWorld(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Welcome to Easy Share / Team Share / Eazy Share!"))
 }
 
-//// struct to store request body
 type verifyEmailRequest struct {
 	EmailAddress string `json:"email_address"`
 }
 
-//// validate email address
 func (c verifyEmailRequest) validate() error {
 	return validation.ValidateStruct(&c,
 		validation.Field(&c.EmailAddress, validation.Required, is.Email),
 	)
 }
 
-//// confirm email repsonse
 type verifyEmailResponse struct {
 	EmailAddress     string `json:"email_address"`
 	VerificationCode string `json:"confirmation_code"`
 }
 
-//// init new verify email response instance
 func newVerifyEmailResponse(email sqlc.EmailVerification) (*verifyEmailResponse, error) {
 	var err error
 	return &verifyEmailResponse{
@@ -71,12 +66,11 @@ func newVerifyEmailResponse(email sqlc.EmailVerification) (*verifyEmailResponse,
 }
 
 func (b *BaseHandler) SignUp(w http.ResponseWriter, r *http.Request) {
-	//// set request header content-type to application json
+
 	if r.Header.Get("content-type") != "application/json" {
 		r.Header.Set("content-type", "application/json")
 	}
 
-	//// get and store request body
 	var req verifyEmailRequest
 	rBody := json.NewDecoder(r.Body)
 	rBody.DisallowUnknownFields()
@@ -88,7 +82,6 @@ func (b *BaseHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//// validate email
 	if err := req.validate(); err != nil {
 		if e, ok := err.(validation.InternalError); ok {
 			log.Println(e.InternalError())
@@ -101,7 +94,6 @@ func (b *BaseHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // generate verification code
 	verificationCode, err := utils.GenerateOTP(6)
 	if err != nil {
 		log.Println(err.Error())
@@ -110,18 +102,14 @@ func (b *BaseHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // hash verification code
 	hashedVerificationCode := utils.Hash(verificationCode)
 
-	// // generate verification code expiry time
 	verificationCodeExpiry := time.Now().UTC().Add(5 * time.Minute)
 
-	// // init db
 	db := database.ConnectDB()
 	b = NewBaseHandler(db)
 	q := sqlc.New(b.db)
 
-	// // add email & other details to db
 	arg := sqlc.VerifyEmailParams{
 		EmailAddress:              req.EmailAddress,
 		VerificationCode:          hashedVerificationCode,
@@ -139,7 +127,6 @@ func (b *BaseHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	//// send email to email with verification code
 	config, err := utils.LoadConfig("/home/kibet/go/organized")
 	if err != nil {
 		log.Println(err.Error())
@@ -170,25 +157,21 @@ func (b *BaseHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-// // stuct to store cofirmation code from request
 type confirmEmailRequest struct {
 	ConfirmationCode string `json:"confirmation_code"`
 }
 
-// // function to validate confirmation code
 func (c confirmEmailRequest) validate() error {
 	return validation.ValidateStruct(&c,
 		validation.Field(&c.ConfirmationCode, validation.Required, validation.Length(6, 6)),
 	)
 }
 
-// // struct to store token response
 type confirmEmailResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshRoken string `json:"refresh_token"`
 }
 
-// // init new confirmEmailResponse
 func newConfirmEmailResponse(accessToken, refreshToken string) (*confirmEmailResponse, error) {
 	var err error
 	return &confirmEmailResponse{
@@ -198,12 +181,10 @@ func newConfirmEmailResponse(accessToken, refreshToken string) (*confirmEmailRes
 }
 
 func (b *BaseHandler) ConfirmEmail(w http.ResponseWriter, r *http.Request) {
-	//// set request header content-type to application json
 	if r.Header.Get("content-type") != "application/json" {
 		r.Header.Set("content-type", "application/json")
 	}
 
-	//// get confirmation code
 	var req confirmEmailRequest
 	rBody := json.NewDecoder(r.Body)
 	rBody.DisallowUnknownFields()
@@ -215,7 +196,6 @@ func (b *BaseHandler) ConfirmEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//// validate confirmation code
 	if err := req.validate(); err != nil {
 		if e, ok := err.(validation.InternalError); ok {
 			log.Println(e.InternalError())
@@ -228,15 +208,12 @@ func (b *BaseHandler) ConfirmEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // init db
 	db := database.ConnectDB()
 	b = NewBaseHandler(db)
 	q := sqlc.New(b.db)
 
-	// // hash verification code
 	hashedVerificationCode := utils.Hash(req.ConfirmationCode)
 
-	// // get email with confirmation code
 	email, err := q.GetEmailByVerificationCode(context.Background(), hashedVerificationCode)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -246,10 +223,8 @@ func (b *BaseHandler) ConfirmEmail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// // check if  confirmation code has expired
 	if time.Now().UTC().After(email.VerificationCodeExpiresAt) {
 
-		// // delete email if code has expired
 		err := q.DeleteEmail(context.Background(), email.VerificationCode)
 		if err != nil {
 			log.Println(err)
@@ -263,16 +238,13 @@ func (b *BaseHandler) ConfirmEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // get name from email
 	name := strings.Split(email.EmailAddress, "@")[0]
 
-	// // init config file
 	config, err := utils.LoadConfig("/home/kibet/go/organized")
 	if err != nil {
 		log.Println(err.Error())
 	}
 
-	// // generate and hash password
 	passwordString := []byte(config.PasswordString)
 	hashedPassword, err := utils.HashPassword(string(passwordString))
 	if err != nil {
@@ -282,7 +254,6 @@ func (b *BaseHandler) ConfirmEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//// create user
 	arg := sqlc.CreateUserParams{
 		FullName:     name,
 		EmailAddress: email.EmailAddress,
@@ -299,7 +270,6 @@ func (b *BaseHandler) ConfirmEmail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	//// delete email
 	err = q.DeleteEmail(context.Background(), email.VerificationCode)
 	if err != nil {
 		log.Println(err)
@@ -308,7 +278,6 @@ func (b *BaseHandler) ConfirmEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//// create access token
 	accessToken, err := token.CreateAccessToken(int(user.ID))
 	if err != nil {
 		log.Println(err)
@@ -317,7 +286,6 @@ func (b *BaseHandler) ConfirmEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // decode access token to get token id
 	accessTokenPayload, err := token.VerifyAccessToken(accessToken)
 	if err != nil {
 		log.Println("error decoding access token")
@@ -326,7 +294,6 @@ func (b *BaseHandler) ConfirmEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // create refresh token
 	refreshToken, err := token.CreateRefreshToken(int(user.ID))
 	if err != nil {
 		log.Println(err)
@@ -335,7 +302,6 @@ func (b *BaseHandler) ConfirmEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // decode refresh token to get id
 	refreshTokenPayload, err := token.VerifyRefreshToken(refreshToken)
 	if err != nil {
 		log.Println("error decoding refresh token")
@@ -344,7 +310,6 @@ func (b *BaseHandler) ConfirmEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // init response
 	res, err := newConfirmEmailResponse(accessToken, refreshToken)
 	if err != nil {
 		log.Println(err)
@@ -353,7 +318,6 @@ func (b *BaseHandler) ConfirmEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//// add token pair to database
 	arg2 := sqlc.CreateTokenPairParams{
 		UserID:         user.ID,
 		AccessTokenID:  accessTokenPayload.ID,
@@ -368,32 +332,25 @@ func (b *BaseHandler) ConfirmEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//// return access and refresh tokens
 	w.Header().Set("content-type", "application/json")
 	json.NewEncoder(w).Encode(res)
 }
 
-// // LOGIN REQUEST ROUTE
-
-// // login request struct
 type loginRequest struct {
 	EmailAddress string `json:"email_address"`
 }
 
-// // function to validate email
 func (lr loginRequest) validate() error {
 	return validation.ValidateStruct(&lr,
 		validation.Field(&lr.EmailAddress, validation.Required, is.Email),
 	)
 }
 
-//// confirm email repsonse
 type loginRequestResponse struct {
 	EmailAddress string `json:"email_address"`
 	MagicCode    string `json:"confirmation_code"`
 }
 
-//// init new verify email response instance
 func newLoginRequestResponse(loginMagicCode sqlc.LoginMagicCode) (*loginRequestResponse, error) {
 	var err error
 	return &loginRequestResponse{
@@ -403,12 +360,10 @@ func newLoginRequestResponse(loginMagicCode sqlc.LoginMagicCode) (*loginRequestR
 }
 
 func (b *BaseHandler) LoginRequest(w http.ResponseWriter, r *http.Request) {
-	// // set header's content-type to json
 	if r.Header.Get("content-type") != "application/json" {
 		r.Header.Set("content-type", "application/json")
 	}
 
-	//// get and store request body
 	var req loginRequest
 	rBody := json.NewDecoder(r.Body)
 	rBody.DisallowUnknownFields()
@@ -420,7 +375,6 @@ func (b *BaseHandler) LoginRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//// validate email
 	if err := req.validate(); err != nil {
 		if e, ok := err.(validation.InternalError); ok {
 			log.Println(e.InternalError())
@@ -433,7 +387,6 @@ func (b *BaseHandler) LoginRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//// generate magic code
 	magicCode, err := utils.GenerateOTP(6)
 	if err != nil {
 		log.Println(err.Error())
@@ -442,18 +395,14 @@ func (b *BaseHandler) LoginRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // hash magic code
 	hashedMagicCode := utils.Hash(magicCode)
 
-	//// generate magic code expiry
 	magicCodeExpiry := time.Now().UTC().Add(1 * time.Minute)
 
-	//// init db
 	db := database.ConnectDB()
 	b = NewBaseHandler(db)
 	q := sqlc.New(b.db)
 
-	//// add email & other details to db
 	arg := sqlc.LoginMagicCodeParams{
 		EmailAddress:    req.EmailAddress,
 		MagicCode:       hashedMagicCode,
@@ -471,7 +420,6 @@ func (b *BaseHandler) LoginRequest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	//// send email to email with verification code
 	config, err := utils.LoadConfig("/home/kibet/go/organized")
 	if err != nil {
 		log.Println(err.Error())
@@ -502,27 +450,21 @@ func (b *BaseHandler) LoginRequest(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-// // LOGIN ROUTE
-
-// // login struct
 type loginR struct {
 	MagicCode string `json:"magic_code"`
 }
 
-// // function to validate magic code
 func (mc loginR) validate() error {
 	return validation.ValidateStruct(&mc,
 		validation.Field(&mc.MagicCode, validation.Required, validation.Length(6, 6)),
 	)
 }
 
-// // login response struct
 type loginResponse struct {
 	AccessTokenID  string `json:"access_token"`
 	RefreshTokenID string `json:"refresh_token"`
 }
 
-// // initialize a new loginResponse
 func newLoginResponse(tokenPair sqlc.TokenPair) *loginResponse {
 	return &loginResponse{
 		AccessTokenID:  tokenPair.AccessTokenID.String(),
@@ -531,12 +473,10 @@ func newLoginResponse(tokenPair sqlc.TokenPair) *loginResponse {
 }
 
 func (b *BaseHandler) Login(w http.ResponseWriter, r *http.Request) {
-	// // set header's content-type to json
 	if r.Header.Get("content-type") != "application/json" {
 		r.Header.Set("content-type", "application/json")
 	}
 
-	// // get data from request body
 	rBody := json.NewDecoder(r.Body)
 	rBody.DisallowUnknownFields()
 	var req loginR
@@ -548,7 +488,6 @@ func (b *BaseHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // validate magic code
 	if err := req.validate(); err != nil {
 		if e, ok := err.(validation.InternalError); ok {
 			log.Println(e.InternalError())
@@ -561,15 +500,12 @@ func (b *BaseHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // hash magic code
 	hashedMagicCode := utils.Hash(req.MagicCode)
 
-	// // init db
 	db := database.ConnectDB()
 	b = NewBaseHandler(db)
 	q := sqlc.New(b.db)
 
-	// // get email by magic code
 	magicCode, err := q.GetMagicCode(context.Background(), hashedMagicCode)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -580,7 +516,6 @@ func (b *BaseHandler) Login(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// // check if magic code has expired
 	if time.Now().UTC().After(magicCode.MagicCodeExpiry) {
 		log.Println("magic code has expired")
 		w.Header().Set("content-type", "application/json")
@@ -588,7 +523,6 @@ func (b *BaseHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // get user by email
 	user, err := q.GetUserByEmail(context.Background(), magicCode.EmailAddress)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -602,7 +536,6 @@ func (b *BaseHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: find the dashboard a user belongs to
 
-	// // generate access token
 	accessToken, err := token.CreateAccessToken(int(user.ID))
 	if err != nil {
 		log.Println("error creating access token")
@@ -611,7 +544,6 @@ func (b *BaseHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // get access token id
 	accessTokenPayload, err := token.VerifyAccessToken(accessToken)
 	if err != nil {
 		log.Println("error occured when verifying access token")
@@ -620,7 +552,6 @@ func (b *BaseHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // generate refresh token
 	refreshToken, err := token.CreateRefreshToken(int(user.ID))
 	if err != nil {
 		log.Println("an error occured when generating refresh token")
@@ -629,7 +560,6 @@ func (b *BaseHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // get refresh token id
 	refreshTokenPayload, err := token.VerifyRefreshToken(refreshToken)
 	if err != nil {
 		log.Println("an error occured while verifying refresh token")
@@ -638,7 +568,6 @@ func (b *BaseHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // save user tokens
 	arg := sqlc.CreateTokenPairParams{
 		UserID:         user.ID,
 		AccessTokenID:  accessTokenPayload.ID,
@@ -656,7 +585,6 @@ func (b *BaseHandler) Login(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// // delete magic code
 	err = q.DeleteMagicCode(context.Background(), magicCode.MagicCode)
 	if err != nil {
 		log.Println("an error occured when deleting magic code")
@@ -665,7 +593,6 @@ func (b *BaseHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // response
 	res := newLoginResponse(tokenPair)
 
 	w.Header().Set("content-type", "application/json")
