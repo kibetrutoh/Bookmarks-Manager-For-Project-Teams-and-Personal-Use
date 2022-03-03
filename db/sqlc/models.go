@@ -9,6 +9,24 @@ import (
 	"github.com/google/uuid"
 )
 
+type Dashboard struct {
+	UserID       int32          `json:"user_id"`
+	ID           int32          `json:"id"`
+	Name         string         `json:"name"`
+	ProfileImage sql.NullString `json:"profile_image"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	Status       string         `json:"status"`
+	Tier         string         `json:"tier"`
+}
+
+type DashboardMember struct {
+	UserID      int32     `json:"user_id"`
+	DashboardID int32     `json:"dashboard_id"`
+	AccessLevel string    `json:"access_level"`
+	JoinedOn    time.Time `json:"joined_on"`
+}
+
 type EmailVerification struct {
 	EmailAddress              string    `json:"email_address"`
 	VerificationCode          string    `json:"verification_code"`
@@ -23,15 +41,10 @@ type Invite struct {
 }
 
 type LoginMagicCode struct {
-	MagicCode       string    `json:"magic_code"`
-	EmailAddress    string    `json:"email_address"`
-	MagicCodeExpiry time.Time `json:"magic_code_expiry"`
-}
-
-type TokenPair struct {
-	UserID         int32     `json:"user_id"`
-	AccessTokenID  uuid.UUID `json:"access_token_id"`
-	RefreshTokenID uuid.UUID `json:"refresh_token_id"`
+	UserID       int32     `json:"user_id"`
+	Code         string    `json:"code"`
+	EmailAddress string    `json:"email_address"`
+	CodeExpiry   time.Time `json:"code_expiry"`
 }
 
 type User struct {
@@ -48,20 +61,14 @@ type UserProfile struct {
 	UserID int32 `json:"user_id"`
 }
 
-type Workspace struct {
-	UserID       int32          `json:"user_id"`
-	ID           int32          `json:"id"`
-	Name         string         `json:"name"`
-	ProfileImage sql.NullString `json:"profile_image"`
-	CreatedAt    time.Time      `json:"created_at"`
-	UpdatedAt    time.Time      `json:"updated_at"`
-	Status       string         `json:"status"`
-	Tier         string         `json:"tier"`
-}
-
-type WorkspaceUser struct {
-	UserID      int32     `json:"user_id"`
-	WorkspaceID int32     `json:"workspace_id"`
-	AccessLevel string    `json:"access_level"`
-	JoinedOn    time.Time `json:"joined_on"`
+type UserSession struct {
+	ID           uuid.UUID `json:"id"`
+	UserID       int32     `json:"user_id"`
+	RefreshToken string    `json:"refresh_token"`
+	ClientAgent  string    `json:"client_agent"`
+	ClientIp     string    `json:"client_ip"`
+	ClientOs     string    `json:"client_os"`
+	Active       bool      `json:"active"`
+	IssuedAt     time.Time `json:"issued_at"`
+	ExpiresAt    time.Time `json:"expires_at"`
 }

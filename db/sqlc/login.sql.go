@@ -8,46 +8,100 @@ import (
 	"time"
 )
 
-const deleteMagicCode = `-- name: DeleteMagicCode :exec
-DELETE FROM login_magic_code
-WHERE magic_code = $1
+const createLoginMagicCode = `-- name: CreateLoginMagicCode :one
+INSERT INTO login_magic_code (user_id, email_address, code, code_expiry)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (code) DO UPDATE
+SET email_address = EXCLUDED.email_address, code_expiry = EXCLUDED.code_expiry
+RETURNING user_id, code, email_address, code_expiry
 `
 
-func (q *Queries) DeleteMagicCode(ctx context.Context, magicCode string) error {
-	_, err := q.db.ExecContext(ctx, deleteMagicCode, magicCode)
-	return err
+type CreateLoginMagicCodeParams struct {
+	UserID       int32     `json:"user_id"`
+	EmailAddress string    `json:"email_address"`
+	Code         string    `json:"code"`
+	CodeExpiry   time.Time `json:"code_expiry"`
 }
 
-const getMagicCode = `-- name: GetMagicCode :one
-SELECT magic_code, email_address, magic_code_expiry FROM login_magic_code
-WHERE magic_code = $1
-LIMIT 1
-`
-
-func (q *Queries) GetMagicCode(ctx context.Context, magicCode string) (LoginMagicCode, error) {
-	row := q.db.QueryRowContext(ctx, getMagicCode, magicCode)
+func (q *Queries) CreateLoginMagicCode(ctx context.Context, arg CreateLoginMagicCodeParams) (LoginMagicCode, error) {
+	row := q.db.QueryRowContext(ctx, createLoginMagicCode,
+		arg.UserID,
+		arg.EmailAddress,
+		arg.Code,
+		arg.CodeExpiry,
+	)
 	var i LoginMagicCode
-	err := row.Scan(&i.MagicCode, &i.EmailAddress, &i.MagicCodeExpiry)
+	err := row.Scan(
+		&i.UserID,
+		&i.Code,
+		&i.EmailAddress,
+		&i.CodeExpiry,
+	)
 	return i, err
 }
 
-const loginMagicCode = `-- name: LoginMagicCode :one
-INSERT INTO login_magic_code (email_address, magic_code, magic_code_expiry)
-VALUES ($1, $2, $3)
-ON CONFLICT (magic_code) DO UPDATE
-SET email_address = EXCLUDED.email_address, magic_code_expiry = EXCLUDED.magic_code_expiry
-RETURNING magic_code, email_address, magic_code_expiry
+const deleteMagicCode = `-- name: DeleteMagicCode :exec
+DELETE FROM login_magic_code
+WHERE code = $1 AND email_address = $2
 `
 
-type LoginMagicCodeParams struct {
-	EmailAddress    string    `json:"email_address"`
-	MagicCode       string    `json:"magic_code"`
-	MagicCodeExpiry time.Time `json:"magic_code_expiry"`
+type DeleteMagicCodeParams struct {
+	Code         string `json:"code"`
+	EmailAddress string `json:"email_address"`
 }
 
-func (q *Queries) LoginMagicCode(ctx context.Context, arg LoginMagicCodeParams) (LoginMagicCode, error) {
-	row := q.db.QueryRowContext(ctx, loginMagicCode, arg.EmailAddress, arg.MagicCode, arg.MagicCodeExpiry)
+func (q *Queries) DeleteMagicCode(ctx context.Context, arg DeleteMagicCodeParams) error {
+	_, err := q.db.ExecContext(ctx, deleteMagicCode, arg.Code, arg.EmailAddress)
+	return err
+}
+
+const getAllUserLoginMagicCodes = `-- name: GetAllUserLoginMagicCodes :many
+SELECT user_id, code, email_address, code_expiry FROM login_magic_code
+WHERE email_address = $1
+`
+
+func (q *Queries) GetAllUserLoginMagicCodes(ctx context.Context, emailAddress string) ([]LoginMagicCode, error) {
+	rows, err := q.db.QueryContext(ctx, getAllUserLoginMagicCodes, emailAddress)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []LoginMagicCode
+	for rows.Next() {
+		var i LoginMagicCode
+		if err := rows.Scan(
+			&i.UserID,
+			&i.Code,
+			&i.EmailAddress,
+			&i.CodeExpiry,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getMagicCode = `-- name: GetMagicCode :one
+SELECT user_id, code, email_address, code_expiry FROM login_magic_code
+WHERE code = $1
+LIMIT 1
+`
+
+func (q *Queries) GetMagicCode(ctx context.Context, code string) (LoginMagicCode, error) {
+	row := q.db.QueryRowContext(ctx, getMagicCode, code)
 	var i LoginMagicCode
-	err := row.Scan(&i.MagicCode, &i.EmailAddress, &i.MagicCodeExpiry)
+	err := row.Scan(
+		&i.UserID,
+		&i.Code,
+		&i.EmailAddress,
+		&i.CodeExpiry,
+	)
 	return i, err
 }

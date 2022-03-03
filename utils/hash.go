@@ -1,13 +1,11 @@
 package utils
 
 import (
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/base64"
 )
 
-func Hash(value string) string {
-	h := sha1.New()
-	h.Write([]byte(value))
-	hash := base64.URLEncoding.EncodeToString(h.Sum(nil))
-	return hash
+func Hmac256Hash(v string) string {
+	h := sha256.Sum256([]byte(v))
+	return base64.StdEncoding.EncodeToString(h[:])
 }

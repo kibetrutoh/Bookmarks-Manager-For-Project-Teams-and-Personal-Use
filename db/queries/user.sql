@@ -1,4 +1,4 @@
--- name: VerifyEmail :one
+-- name: CreateVerifyEmail :one
 INSERT INTO email_verification (email_address, verification_code, verification_code_expires_at)
 VALUES ($1, $2, $3)
 ON CONFLICT (email_address) DO UPDATE
@@ -21,7 +21,7 @@ ON CONFLICT (email_address) DO UPDATE
 SET full_name = EXCLUDED.full_name, password = EXCLUDED.password
 RETURNING *;
 
--- name: User :one
+-- name: GetUser :one
 SELECT * FROM users
 WHERE id = $1
 LIMIT 1;
@@ -31,28 +31,28 @@ SELECT * FROM users
 WHERE email_address = $1
 LIMIT 1;
 
--- name: Users :many
+-- name: GetAllUsers :many
 SELECT * FROM users
 ORDER BY full_name ASC;
 
--- name: UpdateFullname :one
+-- name: UpdateUserFullName :one
 UPDATE users
 SET full_name = $2
 WHERE id = $1
 RETURNING *;
 
--- name: UpdateEmail :one
+-- name: UpdateUserEmail :one
 UPDATE users
 SET email_address = $2
 WHERE id = $1
 RETURNING *;
 
--- name: UpdatePassword :one
+-- name: UpdateUserPassword :one
 UPDATE users
 SET password = $2
 WHERE id = $1
 RETURNING *;
 
--- name: DeleteUser :exec
+-- name: DeleteUserAccount :exec
 DELETE FROM users
 WHERE id = $1;

@@ -11,6 +11,7 @@ func Router() *chi.Mux {
 
 	r := chi.NewRouter()
 
+	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.AllowContentEncoding("application/json"))
@@ -18,40 +19,38 @@ func Router() *chi.Mux {
 	r.Use(middleware.RedirectSlashes)
 
 	db := database.ConnectDB()
-	controllers := controllers.NewBaseHandler(db)
+	baseHandler := controllers.NewBaseHandler(db)
 
-	r.Get("/", controllers.HelloWorld)
+	r.Get("/", baseHandler.HelloWorld)
 
-	// r.Post("/account/logout", h.Logout)
-	// r.Get("/account/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.GetUser)
-	// r.Put("/account/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.UpdateUser)
-	// r.Delete("/account/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.DeleteUser)
-	// r.Get("/account/allusers", h.AllUsers)
-	// r.Post("/token/refreshtoken", h.RefreshToken)
-	// r.Put("/tenant/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.UpdateWorkspace)
-	// r.Get("/tenant-user/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.GetWorkspaceUser)
-	// r.Delete("/tenant-user/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.DeleteWorkspaceUser)
+	r.Route("/users", func(r chi.Router) {
 
-	// r.Route("/workspaces", func(r chi.Router) {
-	// 	r.Get("/all", h.GetAllWorkspaces)
-	// 	r.Get("/find", h.FindWorkspaces)
+		r.Get("/", baseHandler.GetAllUsers)
 
-	// 	r.Route("/workspace", func(r chi.Router) {
-	// 		r.Post("/create-workspace", h.CreateWorkspace)
-	// 	})
+		r.Route("/auth", func(r chi.Router) {
+			r.Post("/request/email/verification/code", baseHandler.RequestVerificationCode)
+			r.Post("/email/verify", baseHandler.VerifyEmail)
+			r.Post("/request/login/magic/code", baseHandler.RequestLoginMagicCode)
+			r.Post("/verify/login/magic/code", baseHandler.VerifyMagicCode)
+			r.Post("/request/new/access/token", baseHandler.RequestNewAccessToken)
+			r.Post("/manual/sign/out", baseHandler.ManualLogout)
+		})
 
-	// 	r.Route("/{workspace:^[0-9]*$}", func(r chi.Router) {
-	// 		r.Post("/inviteuser", h.InviteWorkspaceUser)
-	// 		r.Post("/accept-invitation/{invitation-code:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}", h.AcceptInvitation)
-	// 		r.Get("/members", h.WorkspaceMembers)
-	// 	})
-	// })
+	})
 
-	r.Route("/account", func(r chi.Router) {
-		r.Post("/signup", controllers.SignUp)
-		r.Post("/confirmemail", controllers.ConfirmEmail)
-		r.Post("/loginrequest", controllers.LoginRequest)
-		r.Post("/login", controllers.Login)
+	r.Route("/user", func(r chi.Router) {
+		r.Get("/get/one", baseHandler.GetUser)
+		r.Put("/update/name", baseHandler.UpdateFullName)
+		r.Put("/update/email", baseHandler.UpdateEmail)
+		r.Put("/update/password", baseHandler.UpdatePassword)
+		r.Put("/update/timezone", baseHandler.UpdateTimezone)
+		r.Delete("/delete/account", baseHandler.DeleteAccount)
+	})
+
+	r.Route("/admin", func(r chi.Router) {
+		r.Post("/create", baseHandler.CreateAdmin)
+		r.Put("/update", baseHandler.UpdateAdmin)
+		r.Delete("/remove", baseHandler.RemoveAdmin)
 	})
 
 	return r

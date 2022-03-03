@@ -17,7 +17,7 @@ func ConnectDB() *sql.DB {
 
 	db, err := sql.Open("pgx", config.DBString)
 	if err != nil {
-		log.Println(err.Error())
+		return nil
 	}
 
 	db.SetMaxIdleConns(5)

@@ -36,3 +36,24 @@ UPDATE GO
 REMOVE PPA FROM REPO
 
 - sudo add-apt-repository --remove ppa:aslatter/ppa
+
+UNIT TESTING
+
+- https://www.digitalocean.com/community/tutorials/how-to-write-unit-tests-in-go-using-go-test-and-the-testing-package
+
+HANDLE REFRESH TOKEN IN CLIENT
+
+- https://blog.logrocket.com/persistent-login-in-react-using-refresh-token-rotation/ using react
+
+MAGIC LINKS
+
+- https://postmarkapp.com/blog/magic-links
+- https://workos.com/blog/a-guide-to-magic-links
+
+PASSWORD RESET
+
+- https://postmarkapp.com/guides/password-reset-email-best-practices
+
+OTP FORM
+
+- https://codepen.io/johnhoulder/pen/VOKJPo

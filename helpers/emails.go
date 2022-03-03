@@ -7,8 +7,7 @@ import (
 	mailgun "github.com/mailgun/mailgun-go/v4"
 )
 
-func SendInvitationEmail(domain, apiString, sender, subject, recipient, code string) (string, error) {
-	// // create an instance of Mailgun Client to send
+func SendEmailVerificationCode(domain, apiString, sender, subject, recipient, code string) (string, error) {
 	mg := mailgun.NewMailgun(domain, apiString)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
@@ -27,7 +26,8 @@ func SendInvitationEmail(domain, apiString, sender, subject, recipient, code str
 			}
 		}
 	}
-	err := mg.CreateTemplate(ctx, &mailgun.Template{
+
+	if err := mg.CreateTemplate(ctx, &mailgun.Template{
 		Name: "verifyemail",
 		Version: mailgun.TemplateVersion{
 			Template: `
@@ -45,12 +45,10 @@ td.mj-full-width-mobile { width: auto !important; }
 			Engine: mailgun.TemplateEngineGo,
 			Tag:    "v1",
 		},
-	})
-	if err != nil {
+	}); err != nil {
 		return "", err
 	}
 
-	// // gite time for template to show up in the system
 	time.Sleep(time.Second * 3)
 
 	message := mg.NewMessage(sender, subject, "")
@@ -58,7 +56,57 @@ td.mj-full-width-mobile { width: auto !important; }
 	message.AddRecipient(recipient)
 
 	message.AddVariable("code", code)
-	// // send message with a 30 second timeout
+
+	_, id, err := mg.Send(ctx, message)
+	if err != nil {
+		return "", err
+	}
+	return id, err
+}
+
+func SendEmailNotRegisteredEmail(domain, APIString, sender, recipient, subject string) (string, error) {
+	mg := mailgun.NewMailgun(domain, APIString)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
+	templates := mg.ListTemplates(nil)
+	var page, results []mailgun.Template
+	if templates.Next(ctx, &page) {
+		results = append(results, page...)
+		for _, r := range results {
+			if r.Name == "email_not_registered" {
+				err := mg.DeleteTemplate(ctx, "email_not_registered")
+				if err != nil {
+					return "", err
+				}
+			}
+		}
+	}
+
+	if err := mg.CreateTemplate(ctx, &mailgun.Template{
+		Name: "email_not_registered",
+		Version: mailgun.TemplateVersion{
+			Template: `
+			<h3>Hello</h3>
+			</br>
+			<p>You email is not registered with us yet. No worries though, please <a href="https://app.smartlook.com/sign/up">create account here</a></p>
+			</br>
+			<p>Haron, Founder.</p>
+			`,
+			Engine: mailgun.TemplateEngineGo,
+			Tag:    "v1",
+		},
+	}); err != nil {
+		return "", err
+	}
+
+	time.Sleep(time.Second * 3)
+
+	message := mg.NewMessage(sender, subject, "")
+	message.SetTemplate("email_not_registered")
+	message.AddRecipient(recipient)
+
 	_, id, err := mg.Send(ctx, message)
 	if err != nil {
 		return "", err

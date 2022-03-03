@@ -1,21 +1,28 @@
 package utils
 
 import (
-	"crypto/rand"
+	"math/rand"
+	"time"
 )
 
-const otpChars = "1234567890"
+func randomNumber(min, max int32) int32 {
+	rand.Seed(time.Now().UnixNano())
+	return min + int32(rand.Intn(int(max-min)))
+}
 
-func GenerateOTP(length int) (string, error) {
-	buffer := make([]byte, length)
-	_, err := rand.Read(buffer)
-	if err != nil {
-		return "", err
-	}
-	otpCharsLength := len(otpChars)
-	for i := 0; i < length; i++ {
-		buffer[i] = otpChars[int(buffer[i])%otpCharsLength]
+func randomStringGen(charSet string, codeLenghth int32) string {
+	code := ""
+	charSetLenghth := int32(len(charSet))
+	for i := int32(0); i < codeLenghth; i++ {
+		index := randomNumber(0, charSetLenghth)
+		code += string(charSet[index])
 	}
 
-	return string(buffer), nil
+	return code
+}
+
+func GenerateOTP() string {
+	charSet := "ABCDEFGHJKLMNPQRSTUVWXYZ123456789"
+	OTP := randomStringGen(charSet, 3) + "-" + randomStringGen(charSet, 3)
+	return OTP
 }

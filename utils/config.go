@@ -2,18 +2,20 @@ package utils
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	DBString          string `mapstructure:"DBSTRING"`
-	PORT              string `mapstructure:"PORT"`
-	DOMAIN            string `mapstructure:"DOMAIN"`
-	MailgunAPIKey     string `mapstructure:"MAILGUN_PRIVATE_API_KEY"`
-	Access_Token_Key  string `mapstructure:"ACCESS_TOKEN_KEY"`
-	Refresh_Token_Key string `mapstructure:"REFRESH_TOKEN_KEY"`
-	PasswordString    string `mapstructure:"PASSWORD_STRING"`
+	DBString               string        `mapstructure:"DBSTRING"`
+	PORT                   string        `mapstructure:"PORT"`
+	DOMAIN                 string        `mapstructure:"DOMAIN"`
+	MailgunAPIKey          string        `mapstructure:"MAILGUN_PRIVATE_API_KEY"`
+	Access_Token_Key       string        `mapstructure:"ACCESS_TOKEN_KEY"`
+	Refresh_Token_Key      string        `mapstructure:"REFRESH_TOKEN_KEY"`
+	Access_Token_Duration  time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
+	Refresh_Token_Duration time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
 }
 
 func LoadConfig(path string) (config Config, err error) {
