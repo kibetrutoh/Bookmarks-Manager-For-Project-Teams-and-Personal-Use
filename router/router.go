@@ -4,7 +4,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/kibetrutoh/kibetgo/controllers"
-	"github.com/kibetrutoh/kibetgo/database"
+	"github.com/kibetrutoh/kibetgo/db/connection"
 )
 
 func Router() *chi.Mux {
@@ -18,7 +18,7 @@ func Router() *chi.Mux {
 	r.Use(middleware.CleanPath)
 	r.Use(middleware.RedirectSlashes)
 
-	db := database.ConnectDB()
+	db := connection.ConnectDB()
 	baseHandler := controllers.NewBaseHandler(db)
 
 	r.Get("/", baseHandler.HelloWorld)

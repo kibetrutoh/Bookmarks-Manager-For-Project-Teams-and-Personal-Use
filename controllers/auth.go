@@ -22,7 +22,7 @@ import (
 	// "github.com/go-chi/chi/v5"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
-	"github.com/kibetrutoh/kibetgo/database"
+	"github.com/kibetrutoh/kibetgo/db/connection"
 	"github.com/kibetrutoh/kibetgo/db/sqlc"
 	"github.com/kibetrutoh/kibetgo/token"
 )
@@ -91,7 +91,7 @@ func (b *BaseHandler) RequestVerificationCode(w http.ResponseWriter, r *http.Req
 
 	verificationCodeExpiry := time.Now().UTC().Add(15 * time.Minute)
 
-	db := database.ConnectDB()
+	db := connection.ConnectDB()
 	b = NewBaseHandler(db)
 	q := sqlc.New(b.db)
 
@@ -182,7 +182,7 @@ func (b *BaseHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := database.ConnectDB()
+	db := connection.ConnectDB()
 	b = NewBaseHandler(db)
 	q := sqlc.New(b.db)
 
@@ -352,7 +352,7 @@ func (b *BaseHandler) RequestLoginMagicCode(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	connectDB := database.ConnectDB()
+	connectDB := connection.ConnectDB()
 	baseHandler := NewBaseHandler(connectDB)
 	queries := sqlc.New(baseHandler.db)
 
@@ -515,7 +515,7 @@ func (b *BaseHandler) VerifyMagicCode(w http.ResponseWriter, r *http.Request) {
 
 	hashedMagicCode := utils.Hmac256Hash(req.MagicCode)
 
-	db := database.ConnectDB()
+	db := connection.ConnectDB()
 	b = NewBaseHandler(db)
 	q := sqlc.New(b.db)
 
@@ -658,7 +658,7 @@ func (b *BaseHandler) RequestNewAccessToken(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	connectDatabase := database.ConnectDB()
+	connectDatabase := connection.ConnectDB()
 	newBaseHandler := NewBaseHandler(connectDatabase)
 	queries := sqlc.New(newBaseHandler.db)
 
@@ -777,7 +777,7 @@ func (b *BaseHandler) RequestNewAccessToken(w http.ResponseWriter, r *http.Reque
 
 func (b *BaseHandler) ManualLogout(w http.ResponseWriter, r *http.Request) {
 
-	connectDatabase := database.ConnectDB()
+	connectDatabase := connection.ConnectDB()
 	newBaseHandler := NewBaseHandler(connectDatabase)
 	queries := sqlc.New(newBaseHandler.db)
 	log.Println(queries)

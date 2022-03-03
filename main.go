@@ -17,7 +17,8 @@ func main() {
 		log.Println("cannot load config", err)
 	}
 
+	port := config.PORT
 	router := router.Router()
 
-	log.Fatal(http.ListenAndServe(config.PORT, router))
+	log.Fatal(http.ListenAndServe(port, router))
 }

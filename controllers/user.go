@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/kibetrutoh/kibetgo/database"
+	"github.com/kibetrutoh/kibetgo/db/connection"
 	"github.com/kibetrutoh/kibetgo/db/sqlc"
 	"github.com/kibetrutoh/kibetgo/helpers"
 	"github.com/kibetrutoh/kibetgo/token"
@@ -40,7 +40,7 @@ func (b *BaseHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	connectDatabase := database.ConnectDB()
+	connectDatabase := connection.ConnectDB()
 	newBaseHandler := NewBaseHandler(connectDatabase)
 	queries := sqlc.New(newBaseHandler.db)
 
