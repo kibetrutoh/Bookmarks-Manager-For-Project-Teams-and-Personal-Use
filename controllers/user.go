@@ -542,10 +542,11 @@ func (b *BaseHandler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 					log.Println(err)
 					helpers.Response(w, ErrInternalServerError.Error(), 500)
 					return
+				} else {
+					res := fmt.Sprintf("account id: %d deleted successfully", userID)
+					helpers.Response(w, res, 200)
+					return
 				}
-				res := fmt.Sprintf("account id :%d deleted successfully", userID)
-				helpers.Response(w, res, 200)
-				return
 			} else {
 				res := "user not found"
 				helpers.Response(w, res, 401)
@@ -601,7 +602,7 @@ func (b *BaseHandler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	user, err := queries.GetUser(context.Background(), int32(userID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			res := fmt.Sprintf("no user with id %d found in database", userID)
+			res := fmt.Sprintf("no user with id: %d found in database", userID)
 			helpers.Response(w, res, 401)
 			return
 		} else {
