@@ -15,8 +15,8 @@ DELETE FROM email_verification
 WHERE verification_code = $1;
 
 -- name: CreateUser :one
-INSERT INTO users (full_name, email_address, password)
-VALUES ($1, $2, $3)
+INSERT INTO users (full_name, email_address, client_os, client_agent, client_ip, client_browser, password)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 ON CONFLICT (email_address) DO UPDATE
 SET full_name = EXCLUDED.full_name, password = EXCLUDED.password
 RETURNING *;

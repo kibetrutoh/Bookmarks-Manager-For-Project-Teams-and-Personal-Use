@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"runtime"
 	"strings"
 
 	"errors"
@@ -25,6 +24,7 @@ import (
 	"github.com/kibetrutoh/kibetgo/db/connection"
 	"github.com/kibetrutoh/kibetgo/db/sqlc"
 	"github.com/kibetrutoh/kibetgo/token"
+	"github.com/mssola/user_agent"
 )
 
 var (
@@ -211,6 +211,23 @@ func (b *BaseHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 
 	name := strings.Split(email.EmailAddress, "@")[0]
 
+	user_agent := user_agent.New(r.UserAgent())
+
+	os := user_agent.OS()
+
+	agent := user_agent.UA()
+
+	ip, err := utils.GetIP(r)
+	if err != nil {
+		log.Println(err)
+		helpers.Response(w, err.Error(), 500)
+		return
+	}
+
+	browser, _ := user_agent.Browser()
+
+	user_agent.Parse(r.UserAgent())
+
 	passwordString := uuid.NewString()
 	hashedPassword, err := utils.HashPassword(passwordString)
 	if err != nil {
@@ -220,9 +237,13 @@ func (b *BaseHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	createUser_arg := sqlc.CreateUserParams{
-		FullName:     name,
-		EmailAddress: email.EmailAddress,
-		Password:     hashedPassword,
+		FullName:      name,
+		EmailAddress:  email.EmailAddress,
+		ClientOs:      os,
+		ClientAgent:   agent,
+		ClientIp:      ip,
+		ClientBrowser: browser,
+		Password:      hashedPassword,
 	}
 
 	user, err := q.CreateUser(context.Background(), createUser_arg)
@@ -242,6 +263,8 @@ func (b *BaseHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	config, err := utils.LoadConfig("/home/kibet/go/organized")
 	if err != nil {
 		log.Println(err.Error())
+		helpers.Response(w, ErrInternalServerError.Error(), 500)
+		return
 	}
 
 	accessToken, accessTokenPayload, err := token.CreateToken(int(user.ID), time.Now().UTC().Add(config.Access_Token_Duration))
@@ -260,24 +283,13 @@ func (b *BaseHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 
 	sessionID := refreshTokenPayload.ID
 
-	clientAgent := r.UserAgent()
-
-	clientIP, err := utils.GetIP(r)
-	if err != nil {
-		log.Println(err)
-		helpers.Response(w, err.Error(), 500)
-		return
-	}
-
-	clientOS := runtime.GOOS
-
 	args := sqlc.CreateUserSessionParams{
 		ID:           sessionID,
 		UserID:       user.ID,
 		RefreshToken: refreshToken,
-		ClientAgent:  clientAgent,
-		ClientIp:     clientIP,
-		ClientOs:     clientOS,
+		ClientAgent:  agent,
+		ClientIp:     ip,
+		ClientOs:     os,
 		ExpiresAt:    time.Now().UTC().Add(config.Refresh_Token_Duration),
 	}
 
@@ -548,15 +560,24 @@ func (b *BaseHandler) VerifyMagicCode(w http.ResponseWriter, r *http.Request) {
 
 	userID := loginMagicCode.UserID
 
-	if err := q.UpdateActiveSessionsForUserToInactive(context.Background(), userID); err != nil {
-		log.Println(err)
+	user_sessions, err := q.GetAllSessionsForUser(context.Background(), userID)
+	if err != nil {
 		helpers.Response(w, ErrInternalServerError.Error(), 500)
 		return
+	}
+
+	if len(user_sessions) > 0 {
+		if err := q.DeleteAllSessionsForaUser(context.Background(), userID); err != nil {
+			helpers.Response(w, ErrInternalServerError.Error(), 500)
+			return
+		}
 	}
 
 	config, err := utils.LoadConfig("/home/kibet/go/organized")
 	if err != nil {
 		log.Println(err.Error())
+		helpers.Response(w, ErrInternalServerError.Error(), 500)
+		return
 	}
 
 	newAccessToken, accessTokenPayload, err := token.CreateToken(int(userID), time.Now().UTC().Add(config.Access_Token_Duration))
@@ -575,24 +596,26 @@ func (b *BaseHandler) VerifyMagicCode(w http.ResponseWriter, r *http.Request) {
 
 	sessionID := refreshTokenPayload.ID
 
-	clientAgent := r.UserAgent()
+	user_agent := user_agent.New(r.UserAgent())
 
-	clientIP, err := utils.GetIP(r)
+	os := user_agent.OS()
+
+	agent := user_agent.UA()
+
+	ip, err := utils.GetIP(r)
 	if err != nil {
 		log.Println(err)
 		helpers.Response(w, err.Error(), 500)
 		return
 	}
 
-	clientOS := runtime.GOOS
-
 	arg := sqlc.CreateUserSessionParams{
 		ID:           sessionID,
 		UserID:       userID,
 		RefreshToken: newRefreshToken,
-		ClientAgent:  clientAgent,
-		ClientIp:     clientIP,
-		ClientOs:     clientOS,
+		ClientAgent:  agent,
+		ClientIp:     ip,
+		ClientOs:     os,
 		ExpiresAt:    time.Now().UTC().Add(config.Refresh_Token_Duration),
 	}
 
@@ -743,24 +766,26 @@ func (b *BaseHandler) RequestNewAccessToken(w http.ResponseWriter, r *http.Reque
 
 	sessionID := refreshTokenPayload.ID
 
-	clientAgent := r.UserAgent()
+	user_agent := user_agent.New(r.UserAgent())
 
-	clientIP, err := utils.GetIP(r)
+	os := user_agent.OS()
+
+	agent := user_agent.UA()
+
+	ip, err := utils.GetIP(r)
 	if err != nil {
 		log.Println(err)
 		helpers.Response(w, err.Error(), 500)
 		return
 	}
 
-	clientOS := runtime.GOOS
-
 	arg := sqlc.CreateUserSessionParams{
 		ID:           sessionID,
 		UserID:       userSession.UserID,
 		RefreshToken: newRefreshToken,
-		ClientAgent:  clientAgent,
-		ClientIp:     clientIP,
-		ClientOs:     clientOS,
+		ClientAgent:  agent,
+		ClientIp:     ip,
+		ClientOs:     os,
 		ExpiresAt:    time.Now().UTC().Add(config.Refresh_Token_Duration),
 	}
 
@@ -776,29 +801,5 @@ func (b *BaseHandler) RequestNewAccessToken(w http.ResponseWriter, r *http.Reque
 }
 
 func (b *BaseHandler) ManualLogout(w http.ResponseWriter, r *http.Request) {
-
-	connectDatabase := connection.ConnectDB()
-	newBaseHandler := NewBaseHandler(connectDatabase)
-	queries := sqlc.New(newBaseHandler.db)
-	log.Println(queries)
-
-	IP, err := utils.GetIP(r)
-	if err != nil {
-		helpers.Response(w, err.Error(), 400)
-		return
-	}
-
-	log.Println(IP)
-
-	token := "dddd"
-	w.Header().Set("content-type", "application/json")
-	w.Header().Add("Authorization", "Bearer "+token)
-	json.NewEncoder(w).Encode(token)
-	//: GOAL = Delete all user refresh tokens
-	//: get access token from request
-	//: verify access token
-	//: get user id from access token payload
-	//: get user from db by id
-	//: get user refresh tokens
-	//: delete all tokens
+	w.Write([]byte("logout"))
 }

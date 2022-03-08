@@ -16,6 +16,7 @@ type Config struct {
 	Refresh_Token_Key      string        `mapstructure:"REFRESH_TOKEN_KEY"`
 	Access_Token_Duration  time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
 	Refresh_Token_Duration time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
+	RollBarToken           string        `mapstructure:"ROLLBAR_TOKEN"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

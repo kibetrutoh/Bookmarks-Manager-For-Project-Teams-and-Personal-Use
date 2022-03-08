@@ -9,26 +9,42 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (full_name, email_address, password)
-VALUES ($1, $2, $3)
+INSERT INTO users (full_name, email_address, client_os, client_agent, client_ip, client_browser, password)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 ON CONFLICT (email_address) DO UPDATE
 SET full_name = EXCLUDED.full_name, password = EXCLUDED.password
-RETURNING id, full_name, email_address, password, role, created_at, updated_at
+RETURNING id, full_name, email_address, client_os, client_agent, client_ip, client_browser, password, role, created_at, updated_at
 `
 
 type CreateUserParams struct {
-	FullName     string `json:"full_name"`
-	EmailAddress string `json:"email_address"`
-	Password     string `json:"password"`
+	FullName      string `json:"full_name"`
+	EmailAddress  string `json:"email_address"`
+	ClientOs      string `json:"client_os"`
+	ClientAgent   string `json:"client_agent"`
+	ClientIp      string `json:"client_ip"`
+	ClientBrowser string `json:"client_browser"`
+	Password      string `json:"password"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser, arg.FullName, arg.EmailAddress, arg.Password)
+	row := q.db.QueryRowContext(ctx, createUser,
+		arg.FullName,
+		arg.EmailAddress,
+		arg.ClientOs,
+		arg.ClientAgent,
+		arg.ClientIp,
+		arg.ClientBrowser,
+		arg.Password,
+	)
 	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.FullName,
 		&i.EmailAddress,
+		&i.ClientOs,
+		&i.ClientAgent,
+		&i.ClientIp,
+		&i.ClientBrowser,
 		&i.Password,
 		&i.Role,
 		&i.CreatedAt,
@@ -79,7 +95,7 @@ func (q *Queries) DeleteUserAccount(ctx context.Context, id int32) error {
 }
 
 const getAllUsers = `-- name: GetAllUsers :many
-SELECT id, full_name, email_address, password, role, created_at, updated_at FROM users
+SELECT id, full_name, email_address, client_os, client_agent, client_ip, client_browser, password, role, created_at, updated_at FROM users
 ORDER BY full_name ASC
 `
 
@@ -96,6 +112,10 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
 			&i.ID,
 			&i.FullName,
 			&i.EmailAddress,
+			&i.ClientOs,
+			&i.ClientAgent,
+			&i.ClientIp,
+			&i.ClientBrowser,
 			&i.Password,
 			&i.Role,
 			&i.CreatedAt,
@@ -128,7 +148,7 @@ func (q *Queries) GetEmailByVerificationCode(ctx context.Context, verificationCo
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, full_name, email_address, password, role, created_at, updated_at FROM users
+SELECT id, full_name, email_address, client_os, client_agent, client_ip, client_browser, password, role, created_at, updated_at FROM users
 WHERE id = $1
 LIMIT 1
 `
@@ -140,6 +160,10 @@ func (q *Queries) GetUser(ctx context.Context, id int32) (User, error) {
 		&i.ID,
 		&i.FullName,
 		&i.EmailAddress,
+		&i.ClientOs,
+		&i.ClientAgent,
+		&i.ClientIp,
+		&i.ClientBrowser,
 		&i.Password,
 		&i.Role,
 		&i.CreatedAt,
@@ -149,7 +173,7 @@ func (q *Queries) GetUser(ctx context.Context, id int32) (User, error) {
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, full_name, email_address, password, role, created_at, updated_at FROM users
+SELECT id, full_name, email_address, client_os, client_agent, client_ip, client_browser, password, role, created_at, updated_at FROM users
 WHERE email_address = $1
 LIMIT 1
 `
@@ -161,6 +185,10 @@ func (q *Queries) GetUserByEmail(ctx context.Context, emailAddress string) (User
 		&i.ID,
 		&i.FullName,
 		&i.EmailAddress,
+		&i.ClientOs,
+		&i.ClientAgent,
+		&i.ClientIp,
+		&i.ClientBrowser,
 		&i.Password,
 		&i.Role,
 		&i.CreatedAt,
@@ -173,7 +201,7 @@ const updateUserEmail = `-- name: UpdateUserEmail :one
 UPDATE users
 SET email_address = $2
 WHERE id = $1
-RETURNING id, full_name, email_address, password, role, created_at, updated_at
+RETURNING id, full_name, email_address, client_os, client_agent, client_ip, client_browser, password, role, created_at, updated_at
 `
 
 type UpdateUserEmailParams struct {
@@ -188,6 +216,10 @@ func (q *Queries) UpdateUserEmail(ctx context.Context, arg UpdateUserEmailParams
 		&i.ID,
 		&i.FullName,
 		&i.EmailAddress,
+		&i.ClientOs,
+		&i.ClientAgent,
+		&i.ClientIp,
+		&i.ClientBrowser,
 		&i.Password,
 		&i.Role,
 		&i.CreatedAt,
@@ -200,7 +232,7 @@ const updateUserFullName = `-- name: UpdateUserFullName :one
 UPDATE users
 SET full_name = $2
 WHERE id = $1
-RETURNING id, full_name, email_address, password, role, created_at, updated_at
+RETURNING id, full_name, email_address, client_os, client_agent, client_ip, client_browser, password, role, created_at, updated_at
 `
 
 type UpdateUserFullNameParams struct {
@@ -215,6 +247,10 @@ func (q *Queries) UpdateUserFullName(ctx context.Context, arg UpdateUserFullName
 		&i.ID,
 		&i.FullName,
 		&i.EmailAddress,
+		&i.ClientOs,
+		&i.ClientAgent,
+		&i.ClientIp,
+		&i.ClientBrowser,
 		&i.Password,
 		&i.Role,
 		&i.CreatedAt,
@@ -227,7 +263,7 @@ const updateUserPassword = `-- name: UpdateUserPassword :one
 UPDATE users
 SET password = $2
 WHERE id = $1
-RETURNING id, full_name, email_address, password, role, created_at, updated_at
+RETURNING id, full_name, email_address, client_os, client_agent, client_ip, client_browser, password, role, created_at, updated_at
 `
 
 type UpdateUserPasswordParams struct {
@@ -242,6 +278,10 @@ func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPassword
 		&i.ID,
 		&i.FullName,
 		&i.EmailAddress,
+		&i.ClientOs,
+		&i.ClientAgent,
+		&i.ClientIp,
+		&i.ClientBrowser,
 		&i.Password,
 		&i.Role,
 		&i.CreatedAt,

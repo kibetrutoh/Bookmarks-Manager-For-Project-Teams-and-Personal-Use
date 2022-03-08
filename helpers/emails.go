@@ -113,3 +113,55 @@ func SendEmailNotRegisteredEmail(domain, APIString, sender, recipient, subject s
 	}
 	return id, err
 }
+
+func Send_ChangeEmail_Email(domain, APIKey, sender, recipient, subject, code string) (string, error) {
+	mg := mailgun.NewMailgun(domain, APIKey)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
+	templates := mg.ListTemplates(nil)
+	var page, results []mailgun.Template
+	if templates.Next(ctx, &page) {
+		results = append(results, page...)
+		for _, r := range results {
+			if r.Name == "change-email" {
+				err := mg.DeleteTemplate(ctx, "change-email")
+				if err != nil {
+					return "", err
+				}
+			}
+		}
+	}
+
+	if err := mg.CreateTemplate(ctx, &mailgun.Template{
+		Name: "change-email",
+		Version: mailgun.TemplateVersion{
+			Template: `
+			<h3>Hello</h3>
+			</br>
+			<p>Your email verification code is : {{.code}}</p>
+			</br>
+			<p>Haron, Founder.</p>
+			`,
+			Engine: mailgun.TemplateEngineGo,
+			Tag:    "v1",
+		},
+	}); err != nil {
+		return "", err
+	}
+
+	time.Sleep(time.Second * 3)
+
+	message := mg.NewMessage(sender, subject, "")
+	message.SetTemplate("change-email")
+	message.AddRecipient(recipient)
+
+	message.AddVariable("code", code)
+
+	_, id, err := mg.Send(ctx, message)
+	if err != nil {
+		return "", err
+	}
+	return id, err
+}

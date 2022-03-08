@@ -21,30 +21,31 @@ func Router() *chi.Mux {
 	db := connection.ConnectDB()
 	baseHandler := controllers.NewBaseHandler(db)
 
-	r.Get("/", baseHandler.HelloWorld)
+	r.Get("/", baseHandler.Test)
 
 	r.Route("/users", func(r chi.Router) {
 
 		r.Get("/", baseHandler.GetAllUsers)
 
 		r.Route("/auth", func(r chi.Router) {
-			r.Post("/request/email/verification/code", baseHandler.RequestVerificationCode)
-			r.Post("/email/verify", baseHandler.VerifyEmail)
-			r.Post("/request/login/magic/code", baseHandler.RequestLoginMagicCode)
-			r.Post("/verify/login/magic/code", baseHandler.VerifyMagicCode)
-			r.Post("/request/new/access/token", baseHandler.RequestNewAccessToken)
-			r.Post("/manual/sign/out", baseHandler.ManualLogout)
+			r.Post("/signup", baseHandler.RequestVerificationCode)
+			r.Post("/verify-email", baseHandler.VerifyEmail)
+			r.Post("/login", baseHandler.RequestLoginMagicCode)
+			r.Post("/verify-login-magic-code", baseHandler.VerifyMagicCode)
+			r.Post("/refresh-token", baseHandler.RequestNewAccessToken)
+			r.Post("/logout", baseHandler.ManualLogout)
 		})
 
 	})
 
 	r.Route("/user", func(r chi.Router) {
 		r.Get("/get/one", baseHandler.GetUser)
-		r.Put("/update/name", baseHandler.UpdateFullName)
-		r.Put("/update/email", baseHandler.UpdateEmail)
-		r.Put("/update/password", baseHandler.UpdatePassword)
-		r.Put("/update/timezone", baseHandler.UpdateTimezone)
-		r.Delete("/delete/account", baseHandler.DeleteAccount)
+		r.Put("/update-name", baseHandler.UpdateName)
+		r.Post("/update-email", baseHandler.ChangeEmail)
+		r.Put("/verify-update-email-code", baseHandler.VerifyChangeEmailCode)
+		r.Put("/update-password", baseHandler.UpdatePassword)
+		r.Put("/update-timezone", baseHandler.UpdateTimezone)
+		r.Delete("/delete-account", baseHandler.DeleteAccount)
 	})
 
 	r.Route("/admin", func(r chi.Router) {

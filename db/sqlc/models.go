@@ -9,6 +9,13 @@ import (
 	"github.com/google/uuid"
 )
 
+type ChangeEmail struct {
+	UserID       int32     `json:"user_id"`
+	Code         string    `json:"code"`
+	EmailAddress string    `json:"email_address"`
+	Expiry       time.Time `json:"expiry"`
+}
+
 type Dashboard struct {
 	UserID       int32          `json:"user_id"`
 	ID           int32          `json:"id"`
@@ -48,13 +55,17 @@ type LoginMagicCode struct {
 }
 
 type User struct {
-	ID           int32     `json:"id"`
-	FullName     string    `json:"full_name"`
-	EmailAddress string    `json:"email_address"`
-	Password     string    `json:"password"`
-	Role         string    `json:"role"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID            int32     `json:"id"`
+	FullName      string    `json:"full_name"`
+	EmailAddress  string    `json:"email_address"`
+	ClientOs      string    `json:"client_os"`
+	ClientAgent   string    `json:"client_agent"`
+	ClientIp      string    `json:"client_ip"`
+	ClientBrowser string    `json:"client_browser"`
+	Password      string    `json:"password"`
+	Role          string    `json:"role"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 type UserProfile struct {
