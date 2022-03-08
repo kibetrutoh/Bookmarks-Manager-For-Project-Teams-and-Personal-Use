@@ -531,7 +531,13 @@ func (b *BaseHandler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 	if len(users) > 0 {
 		for _, user := range users {
 			if user.ID == int32(userID) {
-				userID = int(user.ID)
+				thisUser := user
+				if thisUser.Role != "User" {
+					res := "admins are not authorized to access this route"
+					helpers.Response(w, res, 402)
+					return
+				}
+				userID = int(thisUser.ID)
 				if err := queries.DeleteUserAccount(context.Background(), user.ID); err != nil {
 					log.Println(err)
 					helpers.Response(w, ErrInternalServerError.Error(), 500)
