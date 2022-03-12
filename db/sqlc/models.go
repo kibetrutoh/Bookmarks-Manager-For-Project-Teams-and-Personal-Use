@@ -9,49 +9,69 @@ import (
 	"github.com/google/uuid"
 )
 
-type ChangeEmail struct {
+type Dashboard struct {
+	ID        int32          `json:"id"`
+	UserID    int32          `json:"user_id"`
+	Name      string         `json:"name"`
+	Logo      sql.NullString `json:"logo"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	Status    string         `json:"status"`
+	PlanID    uuid.UUID      `json:"plan_id"`
+}
+
+type DashboardMember struct {
+	ID                 int32        `json:"id"`
+	MemberID           int32        `json:"member_id"`
+	DashboardID        int32        `json:"dashboard_id"`
+	AccessLevel        uuid.UUID    `json:"access_level"`
+	InvitedBy          int32        `json:"invited_by"`
+	InvitedAt          time.Time    `json:"invited_at"`
+	AcceptedInvitation sql.NullBool `json:"accepted_invitation"`
+	JoinedAt           time.Time    `json:"joined_at"`
+}
+
+type DashboardRole struct {
+	ID       uuid.UUID `json:"id"`
+	RoleName string    `json:"role_name"`
+}
+
+type EmailUpdateVerificationCode struct {
+	ID           uuid.UUID `json:"id"`
 	UserID       int32     `json:"user_id"`
 	Code         string    `json:"code"`
 	EmailAddress string    `json:"email_address"`
 	Expiry       time.Time `json:"expiry"`
 }
 
-type Dashboard struct {
-	UserID       int32          `json:"user_id"`
-	ID           int32          `json:"id"`
-	Name         string         `json:"name"`
-	ProfileImage sql.NullString `json:"profile_image"`
-	CreatedAt    time.Time      `json:"created_at"`
-	UpdatedAt    time.Time      `json:"updated_at"`
-	Status       string         `json:"status"`
-	Tier         string         `json:"tier"`
-}
-
-type DashboardMember struct {
-	UserID      int32     `json:"user_id"`
-	DashboardID int32     `json:"dashboard_id"`
-	AccessLevel string    `json:"access_level"`
-	JoinedOn    time.Time `json:"joined_on"`
-}
-
-type EmailVerification struct {
-	EmailAddress              string    `json:"email_address"`
-	VerificationCode          string    `json:"verification_code"`
-	VerificationCodeExpiresAt time.Time `json:"verification_code_expires_at"`
-}
-
 type Invite struct {
-	EmailAddress   string        `json:"email_address"`
-	InvitationCode string        `json:"invitation_code"`
-	WorkspaceID    sql.NullInt32 `json:"workspace_id"`
-	AccessLevel    string        `json:"access_level"`
+	ID                  uuid.UUID     `json:"id"`
+	InviteFrom          int32         `json:"invite_from"`
+	StudentEmailAddress string        `json:"student_email_address"`
+	InvitationCode      string        `json:"invitation_code"`
+	DashboardID         sql.NullInt32 `json:"dashboard_id"`
+	AccessLevel         string        `json:"access_level"`
+	InviteExpiry        time.Time     `json:"invite_expiry"`
 }
 
 type LoginMagicCode struct {
+	ID           uuid.UUID `json:"id"`
 	UserID       int32     `json:"user_id"`
 	Code         string    `json:"code"`
 	EmailAddress string    `json:"email_address"`
 	CodeExpiry   time.Time `json:"code_expiry"`
+}
+
+type Plan struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
+type SignupEmailVerificationCode struct {
+	ID               uuid.UUID `json:"id"`
+	EmailAddress     string    `json:"email_address"`
+	VerificationCode string    `json:"verification_code"`
+	Expiry           time.Time `json:"expiry"`
 }
 
 type User struct {
@@ -60,10 +80,8 @@ type User struct {
 	EmailAddress  string    `json:"email_address"`
 	ClientOs      string    `json:"client_os"`
 	ClientAgent   string    `json:"client_agent"`
-	ClientIp      string    `json:"client_ip"`
 	ClientBrowser string    `json:"client_browser"`
-	Password      string    `json:"password"`
-	Role          string    `json:"role"`
+	Timezone      string    `json:"timezone"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 }

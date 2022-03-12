@@ -1,8 +1,8 @@
 migrateup:
-		migrate -path db/migrations -database "postgresql://kibet:535169003@localhost:5432/organizedweb?sslmode=disable" -verbose up
+		migrate -path db/migrations -database "postgresql://kibet:535169003@localhost:5432/veryorganized?sslmode=disable" -verbose up
 
 migratedown:
-		migrate -path db/migrations -database "postgresql://kibet:535169003@localhost:5432/organizedweb?sslmode=disable" -verbose down
+		migrate -path db/migrations -database "postgresql://kibet:535169003@localhost:5432/veryorganized?sslmode=disable" -verbose down
 
 run:
 	go run main.go

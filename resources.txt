@@ -1,4 +1,14 @@
-- Postgres one-to-one relationship: https://launchschool.com/books/sql/read/table_relationships#onetoone
+SQL:
+- https://dataschool.com/learn-sql/
+- https://learnsql.com/blog/query-parent-child-tree/
+
+GOLANG MIGRATE GENERATE MIGRATION FILE:
+- migrate create -ext sql -dir db/migrations -seq filenamehere
+
+- POSTGRES RELATIONSHIPS:
+
+-https://launchschool.com/books/sql/read/table_relationships#onetoone
+- https://www.tutorialsteacher.com/sqlserver/tables-relations
 - http status codes : https://httpstatuses.com/
 - postgres check constraint: https://stackoverflow.com/questions/7250939/in-postgres-how-do-you-restrict-possible-values-for-a-particular-column/7250991
 - citus postgres multi-tenancy design: https://docs.citusdata.com/en/v10.2/use_cases/multi_tenant.html

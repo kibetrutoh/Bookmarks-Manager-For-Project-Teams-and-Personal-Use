@@ -61,7 +61,7 @@ func (b *BaseHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	newBaseHandler := NewBaseHandler(connectDatabase)
 	queries := sqlc.New(newBaseHandler.db)
 
-	user, err := queries.GetUser(context.Background(), int32(tokenPayload.UserID))
+	user, err := queries.GetUserById(context.Background(), int32(tokenPayload.UserID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = fmt.Errorf("user with id not found")
@@ -82,7 +82,7 @@ type updateNameRequest struct {
 
 func (u updateNameRequest) validate() error {
 	return validation.ValidateStruct(&u,
-		validation.Field(&u.Name, validation.Required, validation.Min(5)),
+		validation.Field(&u.Name, validation.Required, validation.Length(5, 100)),
 	)
 }
 
@@ -268,14 +268,14 @@ func (b *BaseHandler) ChangeEmail(w http.ResponseWriter, r *http.Request) {
 
 	expiry := time.Now().UTC().Add(30 * time.Minute)
 
-	arg := sqlc.CreateChangeEmailCodeParams{
+	arg := sqlc.InsertIntoEmailUpdateVerificationTableParams{
 		UserID:       int32(tokenPayload.UserID),
 		Code:         hashCode,
 		EmailAddress: req.EmailAddress,
 		Expiry:       expiry,
 	}
 
-	if _, err := queries.CreateChangeEmailCode(context.Background(), arg); err != nil {
+	if _, err := queries.InsertIntoEmailUpdateVerificationTable(context.Background(), arg); err != nil {
 		log.Println(err)
 		helpers.Response(w, ErrInternalServerError.Error(), 500)
 		return
@@ -361,7 +361,7 @@ func (b *BaseHandler) VerifyChangeEmailCode(w http.ResponseWriter, r *http.Reque
 
 	hashCode := utils.Hmac256Hash(req.Code)
 
-	dbCode, err := queries.GetChangeEmailCode(context.Background(), hashCode)
+	emailUpdateVerificationCode, err := queries.GetEmailUpdateVerificationCode(context.Background(), hashCode)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err := fmt.Errorf("invalid code")
@@ -374,8 +374,8 @@ func (b *BaseHandler) VerifyChangeEmailCode(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if time.Now().UTC().After(dbCode.Expiry) {
-		if err := queries.DeleteChangeEmailCode(context.Background(), dbCode.Code); err != nil {
+	if time.Now().UTC().After(emailUpdateVerificationCode.Expiry) {
+		if err := queries.DeleteEmailUpdateVerificationCode(context.Background(), emailUpdateVerificationCode.Code); err != nil {
 			log.Println(err)
 			helpers.Response(w, ErrInternalServerError.Error(), 500)
 			return
@@ -386,15 +386,15 @@ func (b *BaseHandler) VerifyChangeEmailCode(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if tokenPayload.UserID != int(dbCode.UserID) {
+	if tokenPayload.UserID != int(emailUpdateVerificationCode.UserID) {
 		err := fmt.Errorf(`users don't match`)
 		helpers.Response(w, err.Error(), 401)
 		return
 	}
 
 	updateUserEmail_arg := sqlc.UpdateUserEmailParams{
-		ID:           dbCode.UserID,
-		EmailAddress: dbCode.EmailAddress,
+		ID:           emailUpdateVerificationCode.UserID,
+		EmailAddress: emailUpdateVerificationCode.EmailAddress,
 	}
 
 	user, err := queries.UpdateUserEmail(context.Background(), updateUserEmail_arg)
@@ -404,7 +404,7 @@ func (b *BaseHandler) VerifyChangeEmailCode(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := queries.DeleteChangeEmailCode(context.Background(), dbCode.Code); err != nil {
+	if err := queries.DeleteEmailUpdateVerificationCode(context.Background(), emailUpdateVerificationCode.Code); err != nil {
 		log.Println(err)
 		helpers.Response(w, ErrInternalServerError.Error(), 500)
 		return
@@ -463,7 +463,7 @@ func (b *BaseHandler) VerifyChangeEmailCode(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	createUserSession_arg := sqlc.CreateUserSessionParams{
+	createUserSession_arg := sqlc.InsertIntoUserSessionTableParams{
 		ID:           sessionID,
 		UserID:       user.ID,
 		RefreshToken: refreshToken,
@@ -473,7 +473,7 @@ func (b *BaseHandler) VerifyChangeEmailCode(w http.ResponseWriter, r *http.Reque
 		ExpiresAt:    time.Now().UTC().Add(config.Refresh_Token_Duration),
 	}
 
-	if _, err := queries.CreateUserSession(context.Background(), createUserSession_arg); err != nil {
+	if _, err := queries.InsertIntoUserSessionTable(context.Background(), createUserSession_arg); err != nil {
 		log.Println(err)
 		helpers.Response(w, ErrInternalServerError.Error(), 500)
 		return
@@ -482,16 +482,6 @@ func (b *BaseHandler) VerifyChangeEmailCode(w http.ResponseWriter, r *http.Reque
 	res := newChangeEmailResponse(createUserSession_arg.ID, user.EmailAddress, accessToken, refreshToken, accessTokenPayload.ExpiresAt, refreshTokenPayload.ExpiresAt)
 
 	helpers.JsonResponse(w, res)
-}
-
-// UPDATE PASSWORD
-func (b *BaseHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("update password"))
-}
-
-// UPDATE TIMEZONE
-func (b *BaseHandler) UpdateTimezone(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("update timezone"))
 }
 
 // DELETE ACCOUNT
@@ -532,11 +522,6 @@ func (b *BaseHandler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 		for _, user := range users {
 			if user.ID == int32(userID) {
 				thisUser := user
-				if thisUser.Role != "User" {
-					res := "admins are not authorized to access this route"
-					helpers.Response(w, res, 402)
-					return
-				}
 				userID = int(thisUser.ID)
 				if err := queries.DeleteUserAccount(context.Background(), user.ID); err != nil {
 					log.Println(err)
@@ -586,7 +571,7 @@ func (b *BaseHandler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 
 	requestToken := strings.TrimSpace(splitAuthHeader[1])
 
-	tokenPayload, err := token.VerifyToken(requestToken)
+	_, err := token.VerifyToken(requestToken)
 	if err != nil {
 		log.Println(err)
 		helpers.Response(w, err.Error(), 401)
@@ -596,26 +581,6 @@ func (b *BaseHandler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	connectDatabase := connection.ConnectDB()
 	newBaseHandler := NewBaseHandler(connectDatabase)
 	queries := sqlc.New(newBaseHandler.db)
-
-	userID := tokenPayload.UserID
-
-	user, err := queries.GetUser(context.Background(), int32(userID))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			res := fmt.Sprintf("no user with id: %d found in database", userID)
-			helpers.Response(w, res, 401)
-			return
-		} else {
-			helpers.Response(w, ErrInternalServerError.Error(), 500)
-			return
-		}
-	}
-
-	if user.Role != "Admin" {
-		res := "only admins can view all users"
-		helpers.Response(w, res, 401)
-		return
-	}
 
 	users, err := queries.GetAllUsers(context.Background())
 	if err != nil {
@@ -635,4 +600,9 @@ func (b *BaseHandler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 		helpers.Response(w, res, 401)
 		return
 	}
+}
+
+// UPDATE TIMEZONE
+func (b *BaseHandler) UpdateTimezone(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("update timezone"))
 }

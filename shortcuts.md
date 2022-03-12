@@ -1,2 +1,0 @@
-- ctrl + B = toggle side bar
-- ctrl + Enter = new line

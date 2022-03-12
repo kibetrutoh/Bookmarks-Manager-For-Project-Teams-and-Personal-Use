@@ -1,0 +1,1 @@
+- ONE TO ONE RELATIONSHIP: foreign key is also the primary key

@@ -95,13 +95,13 @@ func (b *BaseHandler) RequestVerificationCode(w http.ResponseWriter, r *http.Req
 	b = NewBaseHandler(db)
 	q := sqlc.New(b.db)
 
-	arg := sqlc.CreateVerifyEmailParams{
-		EmailAddress:              req.EmailAddress,
-		VerificationCode:          hashedVerificationCode,
-		VerificationCodeExpiresAt: verificationCodeExpiry,
+	arg := sqlc.InsertIntoSignUpEmailVerificationTableParams{
+		EmailAddress:     req.EmailAddress,
+		VerificationCode: hashedVerificationCode,
+		Expiry:           verificationCodeExpiry,
 	}
 
-	if _, err = q.CreateVerifyEmail(context.Background(), arg); err != nil {
+	if _, err = q.InsertIntoSignUpEmailVerificationTable(context.Background(), arg); err != nil {
 		log.Println(err)
 		helpers.Response(w, ErrInternalServerError.Error(), 500)
 		return
@@ -188,7 +188,7 @@ func (b *BaseHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 
 	hashedVerificationCode := utils.Hmac256Hash(req.ConfirmationCode)
 
-	email, err := q.GetEmailByVerificationCode(context.Background(), hashedVerificationCode)
+	signUpVerificationCode, err := q.GetSignupEmailVerificationCode(context.Background(), hashedVerificationCode)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			helpers.Response(w, "no email found", 401)
@@ -196,9 +196,9 @@ func (b *BaseHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if time.Now().UTC().After(email.VerificationCodeExpiresAt) {
+	if time.Now().UTC().After(signUpVerificationCode.Expiry) {
 
-		err := q.DeleteEmail(context.Background(), email.VerificationCode)
+		err := q.DeleteSignupEmailVerificationCode(context.Background(), signUpVerificationCode.VerificationCode)
 		if err != nil {
 			log.Println(err)
 			helpers.Response(w, ErrInternalServerError.Error(), 500)
@@ -209,7 +209,7 @@ func (b *BaseHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	name := strings.Split(email.EmailAddress, "@")[0]
+	name := strings.Split(signUpVerificationCode.EmailAddress, "@")[0]
 
 	user_agent := user_agent.New(r.UserAgent())
 
@@ -228,32 +228,28 @@ func (b *BaseHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 
 	user_agent.Parse(r.UserAgent())
 
-	passwordString := uuid.NewString()
-	hashedPassword, err := utils.HashPassword(passwordString)
 	if err != nil {
 		log.Println("error occured when hashing password")
 		helpers.Response(w, ErrInternalServerError.Error(), 500)
 		return
 	}
 
-	createUser_arg := sqlc.CreateUserParams{
+	createUser_arg := sqlc.InsertIntoUsersTableParams{
 		FullName:      name,
-		EmailAddress:  email.EmailAddress,
+		EmailAddress:  signUpVerificationCode.EmailAddress,
 		ClientOs:      os,
 		ClientAgent:   agent,
-		ClientIp:      ip,
 		ClientBrowser: browser,
-		Password:      hashedPassword,
 	}
 
-	user, err := q.CreateUser(context.Background(), createUser_arg)
+	user, err := q.InsertIntoUsersTable(context.Background(), createUser_arg)
 	if err != nil {
 		log.Println(err)
 		helpers.Response(w, ErrInternalServerError.Error(), 500)
 		return
 	}
 
-	err = q.DeleteEmail(context.Background(), email.VerificationCode)
+	err = q.DeleteSignupEmailVerificationCode(context.Background(), signUpVerificationCode.VerificationCode)
 	if err != nil {
 		log.Println(err)
 		helpers.Response(w, ErrInternalServerError.Error(), 500)
@@ -283,7 +279,7 @@ func (b *BaseHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 
 	sessionID := refreshTokenPayload.ID
 
-	args := sqlc.CreateUserSessionParams{
+	args := sqlc.InsertIntoUserSessionTableParams{
 		ID:           sessionID,
 		UserID:       user.ID,
 		RefreshToken: refreshToken,
@@ -293,7 +289,7 @@ func (b *BaseHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 		ExpiresAt:    time.Now().UTC().Add(config.Refresh_Token_Duration),
 	}
 
-	if _, err := q.CreateUserSession(context.Background(), args); err != nil {
+	if _, err := q.InsertIntoUserSessionTable(context.Background(), args); err != nil {
 		log.Println(err)
 		helpers.Response(w, ErrInternalServerError.Error(), 500)
 		return
@@ -547,7 +543,7 @@ func (b *BaseHandler) VerifyMagicCode(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: FIND AND REDIRECT USER TO THEIR APPROPRIATE DASHBOARD
 
-	if _, err := q.GetUser(context.Background(), loginMagicCode.UserID); err != nil {
+	if _, err := q.GetUserById(context.Background(), loginMagicCode.UserID); err != nil {
 		log.Println(err)
 		if errors.Is(err, sql.ErrNoRows) {
 			log.Println("no user found")
@@ -609,7 +605,7 @@ func (b *BaseHandler) VerifyMagicCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	arg := sqlc.CreateUserSessionParams{
+	arg := sqlc.InsertIntoUserSessionTableParams{
 		ID:           sessionID,
 		UserID:       userID,
 		RefreshToken: newRefreshToken,
@@ -619,7 +615,7 @@ func (b *BaseHandler) VerifyMagicCode(w http.ResponseWriter, r *http.Request) {
 		ExpiresAt:    time.Now().UTC().Add(config.Refresh_Token_Duration),
 	}
 
-	if _, err := q.CreateUserSession(context.Background(), arg); err != nil {
+	if _, err := q.InsertIntoUserSessionTable(context.Background(), arg); err != nil {
 		log.Println("an error occured when creating refresh token")
 		helpers.Response(w, ErrInternalServerError.Error(), 500)
 		return
@@ -779,7 +775,7 @@ func (b *BaseHandler) RequestNewAccessToken(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	arg := sqlc.CreateUserSessionParams{
+	arg := sqlc.InsertIntoUserSessionTableParams{
 		ID:           sessionID,
 		UserID:       userSession.UserID,
 		RefreshToken: newRefreshToken,
@@ -789,7 +785,7 @@ func (b *BaseHandler) RequestNewAccessToken(w http.ResponseWriter, r *http.Reque
 		ExpiresAt:    time.Now().UTC().Add(config.Refresh_Token_Duration),
 	}
 
-	if _, err := queries.CreateUserSession(context.Background(), arg); err != nil {
+	if _, err := queries.InsertIntoUserSessionTable(context.Background(), arg); err != nil {
 		log.Println(err)
 		helpers.Response(w, ErrInternalServerError.Error(), 500)
 		return

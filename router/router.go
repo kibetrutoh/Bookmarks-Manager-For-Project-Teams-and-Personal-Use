@@ -43,7 +43,6 @@ func Router() *chi.Mux {
 		r.Put("/update-name", baseHandler.UpdateName)
 		r.Post("/update-email", baseHandler.ChangeEmail)
 		r.Put("/verify-update-email-code", baseHandler.VerifyChangeEmailCode)
-		r.Put("/update-password", baseHandler.UpdatePassword)
 		r.Put("/update-timezone", baseHandler.UpdateTimezone)
 		r.Delete("/delete-account", baseHandler.DeleteAccount)
 	})
