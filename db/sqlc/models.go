@@ -9,31 +9,35 @@ import (
 	"github.com/google/uuid"
 )
 
+type Administrator struct {
+	ID           uuid.UUID `json:"id"`
+	Name         string    `json:"name"`
+	EmailAddress string    `json:"email_address"`
+	Password     string    `json:"password"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
 type Dashboard struct {
-	ID        int32          `json:"id"`
-	UserID    int32          `json:"user_id"`
-	Name      string         `json:"name"`
-	Logo      sql.NullString `json:"logo"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	Status    string         `json:"status"`
-	PlanID    uuid.UUID      `json:"plan_id"`
+	ID             string    `json:"id"`
+	DashboardAdmin int32     `json:"dashboard_admin"`
+	DashboardName  string    `json:"dashboard_name"`
+	Logo           string    `json:"logo"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	Status         string    `json:"status"`
+	Plan           string    `json:"plan"`
 }
 
 type DashboardMember struct {
 	ID                 int32        `json:"id"`
-	MemberID           int32        `json:"member_id"`
-	DashboardID        int32        `json:"dashboard_id"`
-	AccessLevel        uuid.UUID    `json:"access_level"`
+	UserID             int32        `json:"user_id"`
+	DashboardID        string       `json:"dashboard_id"`
 	InvitedBy          int32        `json:"invited_by"`
 	InvitedAt          time.Time    `json:"invited_at"`
 	AcceptedInvitation sql.NullBool `json:"accepted_invitation"`
 	JoinedAt           time.Time    `json:"joined_at"`
-}
-
-type DashboardRole struct {
-	ID       uuid.UUID `json:"id"`
-	RoleName string    `json:"role_name"`
+	AccessLevel        string       `json:"access_level"`
 }
 
 type EmailUpdateVerificationCode struct {
@@ -62,11 +66,6 @@ type LoginMagicCode struct {
 	CodeExpiry   time.Time `json:"code_expiry"`
 }
 
-type Plan struct {
-	ID   uuid.UUID `json:"id"`
-	Name string    `json:"name"`
-}
-
 type SignupEmailVerificationCode struct {
 	ID               uuid.UUID `json:"id"`
 	EmailAddress     string    `json:"email_address"`
@@ -87,7 +86,8 @@ type User struct {
 }
 
 type UserProfile struct {
-	UserID int32 `json:"user_id"`
+	UserID       int32  `json:"user_id"`
+	ProfileImage string `json:"profile_image"`
 }
 
 type UserSession struct {

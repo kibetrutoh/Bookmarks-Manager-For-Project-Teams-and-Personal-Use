@@ -350,8 +350,13 @@ func (b *BaseHandler) VerifyChangeEmailCode(w http.ResponseWriter, r *http.Reque
 	}
 
 	if err := req.validate(); err != nil {
-		log.Println(err)
-		helpers.Response(w, ErrInternalServerError.Error(), 500)
+		if e, ok := err.(validation.InternalError); ok {
+			log.Println(e.InternalError())
+			helpers.Response(w, ErrInternalServerError.Error(), 500)
+			return
+		}
+		res := fmt.Errorf("enter a valid code")
+		helpers.Response(w, res.Error(), 400)
 		return
 	}
 

@@ -28,10 +28,19 @@ func Router() *chi.Mux {
 		r.Get("/", baseHandler.GetAllUsers)
 
 		r.Route("/auth", func(r chi.Router) {
-			r.Post("/signup", baseHandler.RequestVerificationCode)
-			r.Post("/verify-email", baseHandler.VerifyEmail)
-			r.Post("/login", baseHandler.RequestLoginMagicCode)
-			r.Post("/verify-login-magic-code", baseHandler.VerifyMagicCode)
+
+			r.Route("/signup", func(r chi.Router) {
+				r.Post("/", baseHandler.SignUp)
+				r.Post("/verify-email", baseHandler.VerifyEmail)
+				r.Get("/dashboards", baseHandler.ShowUserDashboards)
+			})
+
+			r.Route("/login", func(r chi.Router) {
+				r.Post("/", baseHandler.Login)
+				r.Post("/verify-email", baseHandler.LoginVerifyEmail)
+				r.Get("/dashboards", baseHandler.ShowUserDashboards)
+			})
+
 			r.Post("/refresh-token", baseHandler.RequestNewAccessToken)
 			r.Post("/logout", baseHandler.ManualLogout)
 		})
@@ -40,17 +49,21 @@ func Router() *chi.Mux {
 
 	r.Route("/user", func(r chi.Router) {
 		r.Get("/get/one", baseHandler.GetUser)
-		r.Put("/update-name", baseHandler.UpdateName)
-		r.Post("/update-email", baseHandler.ChangeEmail)
-		r.Put("/verify-update-email-code", baseHandler.VerifyChangeEmailCode)
-		r.Put("/update-timezone", baseHandler.UpdateTimezone)
-		r.Delete("/delete-account", baseHandler.DeleteAccount)
+		r.Put("/update/name", baseHandler.UpdateName)
+		r.Post("/update/email", baseHandler.ChangeEmail)
+		r.Put("/update/email/code/verify", baseHandler.VerifyChangeEmailCode)
+		r.Put("/update/timezone", baseHandler.UpdateTimezone)
+		r.Delete("/delete/account", baseHandler.DeleteAccount)
 	})
 
 	r.Route("/admin", func(r chi.Router) {
 		r.Post("/create", baseHandler.CreateAdmin)
 		r.Put("/update", baseHandler.UpdateAdmin)
 		r.Delete("/remove", baseHandler.RemoveAdmin)
+	})
+
+	r.Route("/dashboards", func(r chi.Router) {
+		r.Post("/", baseHandler.CreateDashboard)
 	})
 
 	return r

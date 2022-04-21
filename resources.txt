@@ -1,3 +1,9 @@
+POSTGRES LTREE
+- https://patshaughnessy.net/2017/12/11/trying-to-represent-a-tree-structure-using-postgres
+
+GO SAAS
+- https://github.com/makeless/makeless-go
+
 SQL:
 - https://dataschool.com/learn-sql/
 - https://learnsql.com/blog/query-parent-child-tree/

@@ -26,3 +26,8 @@ func GenerateOTP() string {
 	OTP := randomStringGen(charSet, 3) + "-" + randomStringGen(charSet, 3)
 	return OTP
 }
+
+func GenerateRandomString() string {
+	charSet := "ABCDEFGHJKLMNPQRSTUVWXYZ123456789"
+	return randomStringGen(charSet, 11)
+}

@@ -54,7 +54,7 @@ func newEmailVerificationCodeRequestResponse(email, verificatonCode string) *ema
 	}
 }
 
-func (b *BaseHandler) RequestVerificationCode(w http.ResponseWriter, r *http.Request) {
+func (b *BaseHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	if r.Header.Get("content-type") != "application/json" {
 		r.Header.Set("content-type", "application/json")
@@ -93,6 +93,7 @@ func (b *BaseHandler) RequestVerificationCode(w http.ResponseWriter, r *http.Req
 
 	db := connection.ConnectDB()
 	b = NewBaseHandler(db)
+	defer b.db.Close()
 	q := sqlc.New(b.db)
 
 	arg := sqlc.InsertIntoSignUpEmailVerificationTableParams{
@@ -191,7 +192,8 @@ func (b *BaseHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	signUpVerificationCode, err := q.GetSignupEmailVerificationCode(context.Background(), hashedVerificationCode)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			helpers.Response(w, "no email found", 401)
+			res := fmt.Errorf("invalid code")
+			helpers.Response(w, res.Error(), 401)
 			return
 		}
 	}
@@ -204,8 +206,8 @@ func (b *BaseHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 			helpers.Response(w, ErrInternalServerError.Error(), 500)
 			return
 		}
-
-		helpers.Response(w, "token has expired", 401)
+		res := fmt.Errorf("code has expired")
+		helpers.Response(w, res.Error(), 401)
 		return
 	}
 
@@ -335,7 +337,7 @@ func newEmailNotRegisteredResponse(emailID string) *emailNotRegisteredResponse {
 	}
 }
 
-func (b *BaseHandler) RequestLoginMagicCode(w http.ResponseWriter, r *http.Request) {
+func (b *BaseHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("content-type") != "application/json" {
 		r.Header.Set("content-type", "application/json")
 	}
@@ -496,7 +498,7 @@ func newVerifyMagicCodeResponse(sessionID uuid.UUID, accessToken string, accessT
 	}
 }
 
-func (b *BaseHandler) VerifyMagicCode(w http.ResponseWriter, r *http.Request) {
+func (b *BaseHandler) LoginVerifyEmail(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("content-type") != "application/json" {
 		r.Header.Set("content-type", "application/json")
 	}
